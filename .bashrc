@@ -160,7 +160,7 @@ PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
 source /opt/ros/hydro/setup.bash
 source ~/catkin_ws/devel/setup.bash --extend
 source /usr/share/gazebo/setup.sh
-export EDITOR='geany'
+export EDITOR='gvim -f'
 
 
 source ~/pandora/devel/setup.sh --extend
