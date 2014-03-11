@@ -1,0 +1,18 @@
+[user]
+	name = alexandros filotheou
+	email = alexandros.filotheou@gmail.com
+
+[alias]
+	logtree = log --graph --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%cr)%C(reset) %C(white)%s%C(reset)%C(bold white)— %cn%C(reset)%C(bold yellow)%d%C(reset)' --abbrev-commit --date=relative
+	st = status
+	co = checkout
+
+[core]
+	excludesfile = ~/.gitignore
+[color]
+	ui = true
+[diff]
+        tool = gvimdiff
+	guitool = gvimdiff
+[merge]
+	tool = meld
