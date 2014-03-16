@@ -11,7 +11,7 @@ fi
 find /home/alek/pandora/ -name "*.cpp" > cscope.files
 find /home/alek/pandora/ -name "*.h" >> cscope.files
 
-cscope -bRkq
+cscope -bRq
 
 cd /home/alek/pandora/src/pandora_vision
 ctags -R .

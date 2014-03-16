@@ -176,6 +176,7 @@ alias makepandora='cd ~/pandora && catkin_make'
 alias openni='roslaunch openni_launch openni.launch'
 alias openni2='roslaunch openni2_launch openni2.launch'
 alias launch_pandora_hole_detector='roslaunch pandora_vision_hole_detector pandora_vision_hole_detector.launch'
+alias rrqt='rosrun rqt_reconfigure rqt_reconfigure'
 
 image_view(){
  rosrun image_view image_view image:="$1"
