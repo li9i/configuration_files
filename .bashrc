@@ -157,15 +157,16 @@ PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
 
 
 
-source /opt/ros/hydro/setup.bash
-source ~/catkin_ws/devel/setup.bash --extend
-source /usr/share/gazebo/setup.sh
-export EDITOR='gvim -f'
+#source /opt/ros/hydro/setup.bash
+#source ~/catkin_ws/devel/setup.bash --extend
+#source /usr/share/gazebo/setup.sh
 
 
 source ~/pandora/devel/setup.sh --extend
 
 
+
+export EDITOR='gvim -f'
 
 alias gvim='UBUNTU_MENUPROXY= gvim'
 alias g='gvim'
@@ -185,4 +186,4 @@ image_view(){
 export CC=clang
 export CXX=clang++
 
-export CSCOPE_DB=/home/alek/vim_specific/cscope.out
+export CSCOPE_DB=$HOME/vim_specific/cscope.out

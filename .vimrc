@@ -214,7 +214,7 @@ let mapleader=","
 set guioptions-=L
 set guioptions-=l
 
-:cscope add /home/alek/vim_specific/cscope.out
+:cscope add $HOME/vim_specific/cscope.out
 
 set tags=./tags;/,tags;/
 
