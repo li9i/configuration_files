@@ -198,7 +198,7 @@ let Tlist_Auto_Highlight_Tag = 1
 "" let Tlist_Use_Right_Window = 1
 let Tlist_Display_Tag_Scope = 1
 let Tlist_Exit_OnlyWindow = 1
-let Tlist_WinWidth = 44
+let Tlist_WinWidth = 47
 
 filetype plugin on
 set omnifunc=syntaxcomplete#Complete
@@ -214,7 +214,7 @@ let mapleader=","
 set guioptions-=L
 set guioptions-=l
 
-:cscope add $HOME/vim_specific/cscope.out
+:cscope add /home/alek/vim_specific/cscope.out
 
 set tags=./tags;/,tags;/
 
@@ -227,4 +227,6 @@ let g:clang_user_options='|| exit 0'
 call pathogen#infect()
 
 let g:NERDTreeWinPos = "right"
-autocmd vimenter * NERDTree
+"autocmd vimenter * NERDTree
+
+let g:alternateSearchPath = 'sfr:../source,sfr:../src,sfr:../include,sfr:../inc, sfr:../../include,sfr:../../src,sfr:../../src/depth_node,sfr:../../src/hole_fusion_node,sfr:../../src/message_conversions,sfr:../../src/synchronizer_node, ,sfr:../../include/depth_node,sfr:../../include/hole_fusion_node,sfr:../../include/message_conversions,sfr:../../include/synchronizer_node'
