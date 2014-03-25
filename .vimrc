@@ -229,4 +229,4 @@ call pathogen#infect()
 let g:NERDTreeWinPos = "right"
 "autocmd vimenter * NERDTree
 
-let g:alternateSearchPath = 'sfr:../source,sfr:../src,sfr:../include,sfr:../inc, sfr:../../include,sfr:../../src,sfr:../../src/depth_node,sfr:../../src/hole_fusion_node,sfr:../../src/message_conversions,sfr:../../src/synchronizer_node, ,sfr:../../include/depth_node,sfr:../../include/hole_fusion_node,sfr:../../include/message_conversions,sfr:../../include/synchronizer_node'
+let g:alternateSearchPath = 'sfr:../source,sfr:../src,sfr:../include,sfr:../inc, sfr:../../include,sfr:../../src,sfr:../../src/depth_node,sfr:../../src/hole_fusion_node,sfr:../../src/message_conversions,sfr:../../src/synchronizer_node,sfr:../../src/rgb_node,sfr:../../src/utils,sfr:../../include/depth_node,sfr:../../include/hole_fusion_node,sfr:../../include/message_conversions,sfr:../../include/synchronizer_node,sfr:../../include/rgb_node,sfr:../../include/utils'

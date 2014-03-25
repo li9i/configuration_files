@@ -186,3 +186,8 @@ export CC=clang
 export CXX=clang++
 
 export CSCOPE_DB=/home/alek/vim_specific/cscope.out
+
+# core dumps
+#ulimit -c unlimited
+#export ROS_HOME=/home/alek/ros_home
+# and then: su, echo 1 > /proc/sys/kernel/core_uses_pid
