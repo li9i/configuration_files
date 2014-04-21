@@ -16,8 +16,12 @@ let g:colors_name = "nuvola"
 
 " Normal {{{1
 " hi Normal ctermfg=black ctermbg=NONE guifg=black guibg=#F9F5F9
-"hi Normal ctermfg=black ctermbg=NONE guifg=black guibg=#FEFDDD
-hi Normal ctermfg=black ctermbg=NONE guifg=black guibg=#f9fdf1
+hi Normal ctermfg=black ctermbg=NONE guifg=black guibg=#FEFDDD
+"hi Normal ctermfg=black ctermbg=NONE guifg=black guibg=#f9fdf1
+"hi Normal ctermfg=black ctermbg=NONE guifg=black guibg=#efeff7
+
+" Column color {{{1
+highlight ColorColumn ctermbg=235 guibg=#efeff7
 
 " Search {{{1
 hi IncSearch cterm=UNDERLINE ctermfg=Black ctermbg=brown gui=UNDERLINE guifg=Black guibg=#FFE568
