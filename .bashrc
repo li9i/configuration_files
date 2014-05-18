@@ -172,13 +172,13 @@ alias g='gvim'
 alias QQ='exit'
 alias cdv='cd ~/pandora/src/pandora_vision'
 alias makev='cd ~/pandora && catkin_make --pkg pandora_vision_hole_detector'
-alias makepandora='cd ~/pandora && catkin_make'
 alias openni='roslaunch openni_launch openni.launch'
 alias openni2='roslaunch openni2_launch openni2.launch'
 alias launch_pandora_hole_detector_dry='roslaunch pandora_vision_hole_detector pandora_vision_hole_detector_dry.launch'
 alias launch_pandora_hole_detector='roslaunch pandora_vision_hole_detector pandora_vision_hole_detector.launch'
-alias launch_pandora_hole_detector2='roslaunch pandora_vision_hole_detector pandora_vision_hole_detector2.launch'
 alias rrqt='rosrun rqt_reconfigure rqt_reconfigure'
+alias run_lint='cd ~/pandora && catkin_make roslint_pandora_vision_hole_detector'
+alias run_tests='cd ~/pandora && catkin_make run_tests'
 
 image_view(){
  rosrun image_view image_view image:="$1"

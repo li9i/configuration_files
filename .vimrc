@@ -233,4 +233,7 @@ let g:alternateSearchPath = 'sfr:../source,sfr:../src,sfr:../include,sfr:../inc,
 
 
 
-au FileType cpp FoldMatching #ifdef #endif 1
+au FileType cpp FoldMatching #ifdef #endif 0
+
+" Disable additional comments generation
+autocmd FileType * setlocal formatoptions-=o
