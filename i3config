@@ -147,7 +147,7 @@ bindsym $mod+r mode "resize"
 # finds out, if available)
 bar {
         output eDP1
-        status_command i3status
+        status_command i3status | ~/.i3/weather.py --wrap-i3-status 90820569 --unit c
         position top
         tray_output primary
         font -misc-fixed-medium-r-normal--13-120-75-75-C-70-iso10646-1
