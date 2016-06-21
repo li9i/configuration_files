@@ -1,250 +1,187 @@
-"{{{ Auto Commands
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
 
-" Automatically cd into the directory that the file is in
-autocmd BufEnter * execute "chdir ".escape(expand("%:p:h"), ' ')
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && return
 
-" Remove any trailing whitespace that is in the file
-autocmd BufRead,BufWrite * if ! &bin | silent! %s/\s\+$//ge | endif
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
 
-" Restore cursor position to where it was before
-augroup JumpCursorOnEdit
-   au!
-   autocmd BufReadPost *
-            \ if expand("<afile>:p:h") !=? $TEMP |
-            \   if line("'\"") > 1 && line("'\"") <= line("$") |
-            \     let JumpCursorOnEdit_foo = line("'\"") |
-            \     let b:doopenfold = 1 |
-            \     if (foldlevel(JumpCursorOnEdit_foo) > foldlevel(JumpCursorOnEdit_foo - 1)) |
-            \        let JumpCursorOnEdit_foo = JumpCursorOnEdit_foo - 1 |
-            \        let b:doopenfold = 2 |
-            \     endif |
-            \     exe JumpCursorOnEdit_foo |
-            \   endif |
-            \ endif
-   " Need to postpone using "zv" until after reading the modelines.
-   autocmd BufWinEnter *
-            \ if exists("b:doopenfold") |
-            \   exe "normal zv" |
-            \   if(b:doopenfold > 1) |
-            \       exe  "+".1 |
-            \   endif |
-            \   unlet b:doopenfold |
-            \ endif
-augroup END
+# append to the history file, don't overwrite it
+shopt -s histappend
 
-"}}}
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
 
-"{{{Misc Settings
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
 
-" Necesary  for lots of cool vim things
-set nocompatible
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+#shopt -s globstar
 
-" This shows what you are typing as a command.  I love this!
-set showcmd
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
-" Folding Stuffs
-set foldmethod=marker
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
 
-" Needed for Syntax Highlighting and stuff
-filetype on
-filetype plugin on
-filetype indent on
-syntax enable
-set grepprg=grep\ -nH\ $*
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color) color_prompt=yes;;
+esac
 
-" Who doesn't like autoindent?
-set cindent
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+#force_color_prompt=yes
 
-" Spaces are better than a tab character
-set expandtab
-set smarttab
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+    else
+	color_prompt=
+    fi
+fi
 
-" Who wants an 8 character tab?  Not me!
-set shiftwidth=2
-set softtabstop=2
-set tabstop=2
-set cino=(2
-let &colorcolumn=join(range(81,999),",")
-
-" Use english for spellchecking, but don't spellcheck by default
-if version >= 700
-   set spl=en spell
-   set nospell
-endif
-
-" Real men use gcc
-"compiler gcc
-
-" Cool tab completion stuff
-set wildmenu
-set wildmode=list:longest,full
-
-" Enable mouse support in console
-set mouse=a
-
-" Got backspace?
-set backspace=2
-
-" Line Numbers PWN!
-set number
-
-" Ignoring case is a fun trick
-set ignorecase
-
-" And so is Artificial Intellegence!
-set smartcase
-
-" Incremental searching is sexy
-set incsearch
-
-" Highlight things that we find with the search
-set hlsearch
-
-" Since I use linux, I want this
-let g:clipbrdDefaultReg = '+'
-
-" When I close a tab, remove the buffer
-set nohidden
-
-" Set off the other paren
-highlight MatchParen ctermbg=4
-" }}}
-
-"{{{Look and Feel
-
-" Favorite Color Scheme
-if has("gui_running")
-   colorscheme nuvola
-   " Remove Toolbar
-   set guioptions-=T
-   "Terminus is AWESOME
-   "set guifont=Terminus\ 9
+if [ "$color_prompt" = yes ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-   colorscheme desert256
-endif
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
 
-"Status line gnarliness
-set laststatus=2
-set statusline=%F%m%r%h%w\ (%{&ff}){%Y}\ [%l,%v][%p%%]
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
 
-"}}}
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
 
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
 
+# some more ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
 
-"{{{ Open URL in browser
+# Add an "alert" alias for long running commands.  Use like so:
+#   sleep 10; alert
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 
-function! Browser ()
-   let line = getline (".")
-   let line = matchstr (line, "http[^   ]*")
-   exec "!konqueror ".line
-endfunction
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
-"}}}
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
 
-"{{{Theme Rotating
-let themeindex=0
-function! RotateColorTheme()
-   let y = -1
-   while y == -1
-      let colorstring = "inkpot#ron#blue#elflord#evening#koehler#murphy#pablo#desert#torte#"
-      let x = match( colorstring, "#", g:themeindex )
-      let y = match( colorstring, "#", x + 1 )
-      let g:themeindex = x + 1
-      if y == -1
-         let g:themeindex = 0
-      else
-         let themestring = strpart(colorstring, x + 1, y - x - 1)
-         return ":colorscheme ".themestring
-      endif
-   endwhile
-endfunction
-" }}}
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
+fi
 
+Green="\[\033[0;32m\]"        # Green
+IRed="\[\033[0;91m\]"         # Red
+BIYellow="\[\033[1;93m\]"     # Yellow
+Yellow="\[\033[0;33m\]"       # Yellow
+BPurple="\[\033[1;35m\]"      # Purple
 
-
-
-
-"}}}
-
-"{{{ Mappings
-
-
-" Space will toggle folds!
-nnoremap <space> za
-
-" Search mappings: These will make it so that going to the next one in a
-" search will center on the line it's found in.
-" map N Nzz
-map n nzz
-
-" Testing
-set completeopt=longest,menuone,preview
-
-inoremap <expr> <cr> pumvisible() ? "\<c-y>" : "\<c-g>u\<cr>"
-inoremap <expr> <c-n> pumvisible() ? "\<lt>c-n>" : "\<lt>c-n>\<lt>c-r>=pumvisible() ? \"\\<lt>down>\" : \"\"\<lt>cr>"
-inoremap <expr> <m-;> pumvisible() ? "\<lt>c-n>" : "\<lt>c-x>\<lt>c-o>\<lt>c-n>\<lt>c-p>\<lt>c-r>=pumvisible() ? \"\\<lt>down>\" : \"\"\<lt>cr>"
-
-"}}}
-
-
-filetype plugin indent on
-syntax on
-:noremap <2-LeftMouse> *
-:inoremap <2-LeftMouse> <c-o>*
-
-hi Search guibg=Orange
-nnoremap <silent> <F8> :TlistToggle<CR>
-let Tlist_Auto_Open = 1
-let Tlist_Auto_Update = 1
-let Tlist_Auto_Highlight_Tag = 1
-"" let Tlist_Use_Right_Window = 1
-let Tlist_Display_Tag_Scope = 1
-let Tlist_Exit_OnlyWindow = 1
-let Tlist_WinWidth = 47
-
-filetype plugin on
-set omnifunc=syntaxcomplete#Complete
-
-set clipboard=unnamedplus
-
-let mapleader=","
-
-:vnoremap p "_dP
-:nnoremap <PageUp> <C-U>
-:nnoremap <PageDown> <C-D>
-
-set guioptions-=L
-set guioptions-=l
-
-:cscope add /home/alek/vim_specific/cscope.out
-
-set tags=./tags;/,tags;/
-
-autocmd BufRead,BufNewFile *.launch setfiletype roslaunch
-
-:set title titlestring=%<%f\ %([%{Tlist_Get_Tagname_By_Line()}]%)
-
-let g:clang_user_options='|| exit 0'
-
-execute pathogen#infect()
-
-let g:NERDTreeWinPos = "right"
-"autocmd vimenter * NERDTree
-
-let g:alternateSearchPath = 'sfr:../source,sfr:../src,sfr:../include,sfr:../inc, sfr:../../include,sfr:../../src,sfr:../../src/depth_node,sfr:../../src/hole_fusion_node,sfr:../../src/message_conversions,sfr:../../src/synchronizer_node,sfr:../../src/rgb_node,sfr:../../src/utils,sfr:../../include/depth_node,sfr:../../include/hole_fusion_node,sfr:../../include/message_conversions,sfr:../../include/synchronizer_node,sfr:../../include/rgb_node,sfr:../../include/utils'
+export GIT_PS1_SHOWDIRTYSTATE=1
+PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 [ \t ] [ \w ] "
+PS1=$PS1'$(git branch &>/dev/null;\
+if [ $? -eq 0 ]; then \
+	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
+	if [ "$?" -eq "0" ]; then \
+		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
+		if [ "$?" -eq "0" ]; then \
+			# @4 - Clean repository - Untracked Files
+			echo "'$BPurple'"$(__git_ps1 "(%s)**"); \
+		else \
+			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
+			if [ "$?" -eq "0" ]; then \
+				# @4 - Clean repository - nothing to commit
+				echo "'$Green'"$(__git_ps1 "(%s)**"); \
+			else \
+				# @5 - Changes to working tree
+				echo "'$IRed'"$(__git_ps1 "(%s)**"); \
+			fi)  "; \
+		fi)"; \
+	else \
+		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
+		if [ "$?" -eq "0" ]; then \
+			# @4 - Clean repository - Untracked Files
+			echo "'$BPurple'"$(__git_ps1 "(%s)"); \
+		else \
+			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
+			if [ "$?" -eq "0" ]; then \
+				# @4 - Clean repository - nothing to commit
+				echo "'$Green'"$(__git_ps1 "(%s)"); \
+			else \
+				# @5 - Changes to working tree
+				echo "'$IRed'"$(__git_ps1 "(%s)"); \
+			fi)  "; \
+		fi)"; \
+	fi)" ;\
+#~ fi \
+#~ else \
+	#~ # @2 - Prompt when not in GIT repo
+	#~ echo " '$Yellow$PathShort$Color_Off' "; \
+fi)';
+PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
 
 
 
-au FileType cpp FoldMatching #ifdef #endif 0
+export EDITOR='gvim -f'
 
-" Disable additional comments generation
-autocmd FileType * setlocal formatoptions-=o
+alias gvim='UBUNTU_MENUPROXY= gvim'
+alias g='gvim'
+alias QQ='exit'
 
-" Latex
-set grepprg=grep\ -nH\ $*
-
-" Startup window size
-:set lines=65 columns=84
+export CC=clang
+export CXX=clang++
 
 
-:setlocal spell spelllang=en_us
+# Disable the touchpad
+synclient TouchpadOff=1
+
+# core dumps
+#ulimit -c unlimited
+#export ROS_HOME=/home/alek/ros_home
+# and then: su, echo 1 > /proc/sys/kernel/core_uses_pid
+
+alias matlab='cd ~/MATLAB/R2014b/bin && ./matlab'
+
+alias mon='xrandr --output HDMI1 --auto --right-of eDP1'
+
+function matrix_rain() {
+  echo -e "\e[1;40m" ; clear ; while :; do echo $LINES $COLUMNS $(( $RANDOM % $COLUMNS)) $(( $RANDOM % 72 )) ;sleep 0.05; done|gawk '{ letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()"; c=$4; letter=substr(letters,c,1);a[$3]=0;for (x in a) {o=a[x];a[x]=a[x]+1; printf "\033[%s;%sH\033[2;32m%s",o,x,letter; printf "\033[%s;%sH\033[1;37m%s\033[0;0H",a[x],x,letter;if (a[x] >= $1) { a[x]=0; } }}'
+}
+
+alias matrix=matrix_rain
+alias we="curl http://wttr.in/stockholm"
