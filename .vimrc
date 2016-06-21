@@ -48,6 +48,7 @@ set foldmethod=marker
 " Needed for Syntax Highlighting and stuff
 filetype on
 filetype plugin on
+filetype indent on
 syntax enable
 set grepprg=grep\ -nH\ $*
 
@@ -61,6 +62,7 @@ set smarttab
 " Who wants an 8 character tab?  Not me!
 set shiftwidth=2
 set softtabstop=2
+set tabstop=2
 set cino=(2
 let &colorcolumn=join(range(81,999),",")
 
@@ -224,7 +226,7 @@ autocmd BufRead,BufNewFile *.launch setfiletype roslaunch
 
 let g:clang_user_options='|| exit 0'
 
-call pathogen#infect()
+execute pathogen#infect()
 
 let g:NERDTreeWinPos = "right"
 "autocmd vimenter * NERDTree
@@ -237,3 +239,12 @@ au FileType cpp FoldMatching #ifdef #endif 0
 
 " Disable additional comments generation
 autocmd FileType * setlocal formatoptions-=o
+
+" Latex
+set grepprg=grep\ -nH\ $*
+
+" Startup window size
+:set lines=65 columns=84
+
+
+:setlocal spell spelllang=en_us
