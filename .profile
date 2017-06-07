@@ -113,7 +113,7 @@ Yellow="\[\033[0;33m\]"       # Yellow
 BPurple="\[\033[1;35m\]"      # Purple
 
 export GIT_PS1_SHOWDIRTYSTATE=1
-PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t) [ \w ] "
+PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 [ \t ] [ \w ] "
 PS1=$PS1'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
 	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
@@ -154,7 +154,6 @@ if [ $? -eq 0 ]; then \
 	#~ echo " '$Yellow$PathShort$Color_Off' "; \
 fi)';
 PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
-#PS1=$PS1"\n\[\033[0m\]>> "
 
 
 
@@ -177,8 +176,6 @@ synclient TouchpadOff=1
 # and then: su, echo 1 > /proc/sys/kernel/core_uses_pid
 
 alias matlab='cd ~/MATLAB/R2014b/bin && ./matlab'
-alias matlab_cmd='matlab -nodisplay -nosplash'
-alias matlab_cmd_thesis='matlab -nodisplay -nosplash -r "cd /media/li9i/6A9AD14446A51251/Dropbox/alex_master_thesis/alefil/experimental"'
 
 alias mon='xrandr --output HDMI1 --auto --right-of eDP1'
 
@@ -188,6 +185,3 @@ function matrix_rain() {
 
 alias matrix=matrix_rain
 alias we="curl http://wttr.in/stockholm"
-
-transfer() { if [ $# -eq 0 ]; then echo -e "No arguments specified. Usage:\necho transfer /tmp/test.md\ncat /tmp/test.md | transfer test.md"; return 1; fi
-tmpfile=$( mktemp -t transferXXX ); if tty -s; then basefile=$(basename "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g'); curl --progress-bar --upload-file "$1" "https://transfer.sh/$basefile" >> $tmpfile; else curl --progress-bar --upload-file "-" "https://transfer.sh/$1" >> $tmpfile ; fi; cat $tmpfile; rm -f $tmpfile; }

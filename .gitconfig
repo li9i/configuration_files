@@ -1,6 +1,6 @@
 [user]
-	name = alexandros philotheou
-	email = alexandros.filotheou@gmail.com
+	name = alexandros filotheou
+	email = alefil@kth.se
 
 [alias]
 	logtree = log --graph --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%cr)%C(reset) %C(white)%s%C(reset)%C(bold white)— %cn%C(reset)%C(bold yellow)%d%C(reset)' --abbrev-commit --date=relative

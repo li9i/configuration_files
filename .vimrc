@@ -248,3 +248,9 @@ set grepprg=grep\ -nH\ $*
 
 
 :setlocal spell spelllang=en_us
+
+
+" copy-paste in insert mode
+set pastetoggle=<F10>
+inoremap <C-v> <F10><C-r>+<F10>
+set clipboard=unnamedplus
