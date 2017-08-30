@@ -106,6 +106,8 @@ if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
     . /etc/bash_completion
 fi
 
+source /usr/share/git/completion/git-prompt.sh
+
 Green="\[\033[0;32m\]"        # Green
 IRed="\[\033[0;91m\]"         # Red
 BIYellow="\[\033[1;93m\]"     # Yellow
