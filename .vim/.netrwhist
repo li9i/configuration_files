@@ -1,6 +1,10 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =4
+let g:netrw_dirhist_cnt =8
 let g:netrw_dirhist_1='/home/alek/pandora/pandora_develop/pandora_robot/src/vision/src/kinect_node'
 let g:netrw_dirhist_2='/home/li9i/Downloads/submission_818351_src/now'
 let g:netrw_dirhist_3='/home/li9i/Downloads/submission_818351_src'
 let g:netrw_dirhist_4='/home/li9i'
+let g:netrw_dirhist_5='/opt/ros/kinetic/share/turtlebot_description'
+let g:netrw_dirhist_6='/home/li9i/.gazebo/models/cafe'
+let g:netrw_dirhist_7='/home/li9i/.gazebo/models/cafe/materials'
+let g:netrw_dirhist_8='/home/li9i/.gazebo/models/cafe/materials/textures'

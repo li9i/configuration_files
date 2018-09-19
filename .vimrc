@@ -254,3 +254,12 @@ set grepprg=grep\ -nH\ $*
 set pastetoggle=<F10>
 inoremap <C-v> <F10><C-r>+<F10>
 set clipboard=unnamedplus
+
+
+" python-specific settings
+augroup python_files
+    autocmd!
+    autocmd FileType python setlocal expandtab
+    autocmd FileType python set tabstop=2
+    autocmd FileType python set shiftwidth=2
+augroup END

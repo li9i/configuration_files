@@ -106,7 +106,7 @@ if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
     . /etc/bash_completion
 fi
 
-source /usr/share/git/completion/git-prompt.sh
+source /etc/bash_completion.d/git-prompt
 
 Green="\[\033[0;32m\]"        # Green
 IRed="\[\033[0;91m\]"         # Red
@@ -161,6 +161,7 @@ PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
 
 
 export EDITOR='gvim -f'
+set -o vi
 
 alias gvim='UBUNTU_MENUPROXY= gvim'
 alias g='gvim'
@@ -168,21 +169,70 @@ alias QQ='exit'
 
 export CC=clang
 export CXX=clang++
+alias g++='g++ -std=c++11'
+alias clang++='clang++ -std=c++11'
 
+function catkin_make_i(){
+  dir=$PWD;
+  cd /home/li9i/catkin_ws/;
+  catkin_make_isolated --install --use-ninja;
+  cd $dir;
+}
+
+function catkin_build(){
+  dir=$PWD;
+  cd ~/catkin_ws/;
+  catkin build $1
+  cd $dir;
+}
+
+# ls after cd
+cd() { builtin cd "$@" && ls; }
+
+
+# ROS-specific
+source /opt/ros/kinetic/setup.bash
+source /home/li9i/catkin_ws/devel/setup.bash
+#source /home/li9i/catkin_is_ws/devel/setup.bash
+#source /home/li9i/catkin_ws/devel_isolated/setup.bash
+#source /home/li9i/catkin_ws/install_isolated/setup.bash
+
+# with hokuyo the turtlebot appears as a white cube in gazebo
+# with kinect it is shown as intended
+export TURTLEBOT_3D_SENSOR="hokuyo"
+#export TURTLEBOT_3D_SENSOR="kinect"
+
+# Used for mitigating gazebo crash.
+# When .bashrc is sourced, the following export line is not considered,
+# and hence gazebo crashes. When executed within the terminal, gazebo
+# starts cleanly. (!)
+export LIBGL_ALWAYS_SOFTWARE=1
 
 # Disable the touchpad
-synclient TouchpadOff=1
+#synclient TouchpadOff=1
 
 # core dumps
 #ulimit -c unlimited
 #export ROS_HOME=/home/alek/ros_home
 # and then: su, echo 1 > /proc/sys/kernel/core_uses_pid
 
-alias matlab='cd ~/MATLAB/R2014b/bin && ./matlab'
+# MATLAB-specific
+alias matlab='cd ~/R2014b/bin && ./matlab'
 alias matlab_cmd='matlab -nodisplay -nosplash'
 alias matlab_cmd_thesis='matlab -nodisplay -nosplash -r "cd /media/li9i/6A9AD14446A51251/Dropbox/alex_master_thesis/alefil/experimental"'
 
-alias mon='xrandr --output HDMI1 --auto --right-of eDP1'
+alias mon='xrandr --output HDMI-1 --rotate right --right-of VGA-1'
+mon
+alias movekeysaround='xmodmap -e "keycode 94 = grave asciitilde" && xmodmap -e "keycode 49 = z"'
+movekeysaround
+
+# Apple keyboard remaps. RUN ONCE, HERE ONLY FOR FUTURE REFERENCE
+#echo 2 | sudo tee /sys/module/hid_apple/parameters/fnmode
+#echo options hid_apple swap_opt_cmd=1 | sudo tee -a /etc/modprobe.d/hid_apple.conf
+#sudo update-initramfs -u -k all
+
+alias 4d='python /media/li9i/elements/Pictures/var/chan/pro/threads/ch.py $1'
+alias 4dd='python /home/li9i/Desktop/ch.py $1'
 
 function matrix_rain() {
   echo -e "\e[1;40m" ; clear ; while :; do echo $LINES $COLUMNS $(( $RANDOM % $COLUMNS)) $(( $RANDOM % 72 )) ;sleep 0.05; done|gawk '{ letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()"; c=$4; letter=substr(letters,c,1);a[$3]=0;for (x in a) {o=a[x];a[x]=a[x]+1; printf "\033[%s;%sH\033[2;32m%s",o,x,letter; printf "\033[%s;%sH\033[1;37m%s\033[0;0H",a[x],x,letter;if (a[x] >= $1) { a[x]=0; } }}'
