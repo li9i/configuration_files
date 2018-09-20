@@ -184,6 +184,7 @@ function catkin_build(){
   cd ~/catkin_ws/;
   catkin build $1
   cd $dir;
+  source /home/li9i/catkin_ws/devel/setup.bash
 }
 
 # ls after cd
@@ -192,10 +193,8 @@ cd() { builtin cd "$@" && ls; }
 
 # ROS-specific
 source /opt/ros/kinetic/setup.bash
-source /home/li9i/catkin_ws/devel/setup.bash
+#source /home/li9i/catkin_ws/devel/setup.bash
 #source /home/li9i/catkin_is_ws/devel/setup.bash
-#source /home/li9i/catkin_ws/devel_isolated/setup.bash
-#source /home/li9i/catkin_ws/install_isolated/setup.bash
 
 # with hokuyo the turtlebot appears as a white cube in gazebo
 # with kinect it is shown as intended
@@ -205,7 +204,7 @@ export TURTLEBOT_3D_SENSOR="hokuyo"
 # Used for mitigating gazebo crash.
 # When .bashrc is sourced, the following export line is not considered,
 # and hence gazebo crashes. When executed within the terminal, gazebo
-# starts cleanly. (!)
+# starts cleanly (!) although not always.
 export LIBGL_ALWAYS_SOFTWARE=1
 
 # Disable the touchpad
