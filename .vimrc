@@ -236,6 +236,8 @@ let g:alternateSearchPath = 'sfr:../source,sfr:../src,sfr:../include,sfr:../inc,
 
 
 au FileType cpp FoldMatching #ifdef #endif 0
+au FileType cpp FoldMatching #if #endif 0
+set foldmarker=#if,#endif
 
 " Disable additional comments generation
 autocmd FileType * setlocal formatoptions-=o
@@ -263,3 +265,16 @@ augroup python_files
     autocmd FileType python set tabstop=2
     autocmd FileType python set shiftwidth=2
 augroup END
+
+nmap <F4> :call SVED_Sync()<CR>
+
+augroup debianlatexfix
+  " Remove all vimrc autocommands within scope
+  autocmd!
+  autocmd BufNewFile,BufRead *.tex   set syntax=tex
+  autocmd BufNewFile,BufRead *.tex   set filetype=tex
+  autocmd BufNewFile,BufRead *.cls   set syntax=tex
+augroup END
+
+autocmd FileType text setlocal nocindent
+autocmd FileType tex setlocal nocindent

@@ -12,7 +12,7 @@
 [color]
 	ui = true
 [diff]
-        tool = gvimdiff
-	guitool = gvimdiff
+  tool = meld
+	guitool = meld
 [merge]
 	tool = meld

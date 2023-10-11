@@ -1,0 +1,7 @@
+PS1('> ')
+EDITOR('gvim > /dev/tty 2>&1 < /dev/tty %s');
+history_control ("ignoredups");
+crash_dumps_octave_core(0);
+sigterm_dumps_octave_core(0);
+sighup_dumps_octave_core(0);
+page_screen_output(0);

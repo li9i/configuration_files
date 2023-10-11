@@ -115,7 +115,7 @@ Yellow="\[\033[0;33m\]"       # Yellow
 BPurple="\[\033[1;35m\]"      # Purple
 
 export GIT_PS1_SHOWDIRTYSTATE=1
-PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t) [ \w ] "
+PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t | \D{%d-%m-%y}) [\u/\h | \w ]"
 PS1=$PS1'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
 	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
@@ -155,10 +155,10 @@ if [ $? -eq 0 ]; then \
 	#~ # @2 - Prompt when not in GIT repo
 	#~ echo " '$Yellow$PathShort$Color_Off' "; \
 fi)';
-PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
-#PS1=$PS1"\n\[\033[0m\]>> "
+#PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
+PS1=$PS1"\n\[\033[0m\]"
 
-
+alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 
 export EDITOR='gvim -f'
 set -o vi
@@ -172,43 +172,12 @@ export CXX=clang++
 alias g++='g++ -std=c++11'
 alias clang++='clang++ -std=c++11'
 
-function catkin_make_i(){
-  dir=$PWD;
-  cd /home/li9i/catkin_ws/;
-  catkin_make_isolated --install --use-ninja;
-  cd $dir;
-}
-
-function catkin_build(){
-  dir=$PWD;
-  cd ~/catkin_ws/;
-  catkin build $1
-  cd $dir;
-  source /home/li9i/catkin_ws/devel/setup.bash
-}
-
-# ls after cd
-cd() { builtin cd "$@" && ls; }
-
-
 # ROS-specific
 source /opt/ros/kinetic/setup.bash
-#source /home/li9i/catkin_ws/devel/setup.bash
-#source /home/li9i/catkin_is_ws/devel/setup.bash
-
-# with hokuyo the turtlebot appears as a white cube in gazebo
-# with kinect it is shown as intended
-export TURTLEBOT_3D_SENSOR="hokuyo"
-#export TURTLEBOT_3D_SENSOR="kinect"
-
-# Used for mitigating gazebo crash.
-# When .bashrc is sourced, the following export line is not considered,
-# and hence gazebo crashes. When executed within the terminal, gazebo
-# starts cleanly (!) although not always.
-export LIBGL_ALWAYS_SOFTWARE=1
+source /home/li9i/catkin_ws/devel/setup.bash
 
 # Disable the touchpad
-#synclient TouchpadOff=1
+synclient TouchpadOff=1
 
 # core dumps
 #ulimit -c unlimited
@@ -216,29 +185,59 @@ export LIBGL_ALWAYS_SOFTWARE=1
 # and then: su, echo 1 > /proc/sys/kernel/core_uses_pid
 
 # MATLAB-specific
-alias matlab='cd ~/R2014b/bin && ./matlab'
+#alias matlab='/media/li9i/var/MATLAB_R2018_files/bin/matlab'
+alias matlab='/media/li9i/var/MATLAB/R2019a/bin/matlab'
 alias matlab_cmd='matlab -nodisplay -nosplash'
-alias matlab_cmd_thesis='matlab -nodisplay -nosplash -r "cd /media/li9i/6A9AD14446A51251/Dropbox/alex_master_thesis/alefil/experimental"'
 
-alias mon='xrandr --output HDMI-1 --rotate right --right-of VGA-1'
-mon
-alias movekeysaround='xmodmap -e "keycode 94 = grave asciitilde" && xmodmap -e "keycode 49 = z"'
-movekeysaround
-
-# Apple keyboard remaps. RUN ONCE, HERE ONLY FOR FUTURE REFERENCE
-#echo 2 | sudo tee /sys/module/hid_apple/parameters/fnmode
-#echo options hid_apple swap_opt_cmd=1 | sudo tee -a /etc/modprobe.d/hid_apple.conf
-#sudo update-initramfs -u -k all
-
+alias mon='xrandr --output HDMI1 --auto --right-of eDP1'
 alias 4d='python /media/li9i/elements/Pictures/var/chan/pro/threads/ch.py $1'
-alias 4dd='python /home/li9i/Desktop/ch.py $1'
+alias 4dd='python /home/li9i/Desktop/4dd.py $1'
 
 function matrix_rain() {
   echo -e "\e[1;40m" ; clear ; while :; do echo $LINES $COLUMNS $(( $RANDOM % $COLUMNS)) $(( $RANDOM % 72 )) ;sleep 0.05; done|gawk '{ letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()"; c=$4; letter=substr(letters,c,1);a[$3]=0;for (x in a) {o=a[x];a[x]=a[x]+1; printf "\033[%s;%sH\033[2;32m%s",o,x,letter; printf "\033[%s;%sH\033[1;37m%s\033[0;0H",a[x],x,letter;if (a[x] >= $1) { a[x]=0; } }}'
 }
 
-alias matrix=matrix_rain
-alias we="curl http://wttr.in/stockholm"
+alias we="curl http://wttr.in/thessaloniki"
 
-transfer() { if [ $# -eq 0 ]; then echo -e "No arguments specified. Usage:\necho transfer /tmp/test.md\ncat /tmp/test.md | transfer test.md"; return 1; fi
-tmpfile=$( mktemp -t transferXXX ); if tty -s; then basefile=$(basename "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g'); curl --progress-bar --upload-file "$1" "https://transfer.sh/$basefile" >> $tmpfile; else curl --progress-bar --upload-file "-" "https://transfer.sh/$1" >> $tmpfile ; fi; cat $tmpfile; rm -f $tmpfile; }
+function catkin_build(){
+  dir=$PWD;
+  cd /home/li9i/catkin_ws/;
+  catkin build $1 $2 $3
+  source /opt/ros/kinetic/setup.bash
+  source /home/li9i/catkin_ws/devel/setup.bash
+  cd $dir;
+}
+
+
+# ls after cd
+cd() { builtin cd "$@" && ls; }
+
+echo "----------------------------"
+date
+echo "----------------------------"
+
+# execute `sign -t PATH_TO_UNSIGNED.pdf -o PATH_TO_SIGNED.pdf -e VERTICAL,RIGHT_MARGIN,LEFT_MARGIN`
+# call java -jar /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/PortableSigner.jar -h for more options
+alias sign="java -jar /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/PortableSigner.jar -b en -n -f -s /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/haricacert.p12 -i /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/linux/MyLogo.png"
+
+
+# route mic to speakers
+alias mic_on="pactl load-module module-loopback latency_msec=1"
+alias mic_off="pactl unload-module module-loopback"
+alias ocl="octave-cli"
+
+# restart audio drivers
+alias audio_reboot="pulseaudio -k && sudo alsa force-reload"
+
+export ROBOT_TYPE=turtlebot
+export NUM_CAMERAS=1
+
+
+# creates common bash history among multiple termninals
+# Avoid duplicates
+HISTCONTROL=ignoredups:erasedups
+export HISTSIZE=100000                   # big big history
+export HISTFILESIZE=100000               # big big history
+
+# When the shell exits, append to the history file instead of overwriting it
+shopt -s histappend
