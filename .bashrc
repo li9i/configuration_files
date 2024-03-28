@@ -211,6 +211,7 @@ function catkin_build(){
 
 # ls after cd
 cd() { builtin cd "$@" && ls; }
+cp() { rsync -ah --progress --info=progress2 "$@"; }
 
 echo "----------------------------"
 date
@@ -241,3 +242,16 @@ export HISTFILESIZE=100000               # big big history
 
 # When the shell exits, append to the history file instead of overwriting it
 shopt -s histappend
+
+
+# 03/2024
+bind 'set show-all-if-ambiguous on'
+bind '"\e[Z":menu-complete-backward'
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+bind 'TAB:menu-complete'
+
+# https://superuser.com/a/1504199/1236116
+bind 'set menu-complete-display-prefix on'
+bind 'set colored-completion-prefix on'
+bind 'set colored-stats on'
