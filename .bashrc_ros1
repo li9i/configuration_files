@@ -115,7 +115,8 @@ Yellow="\[\033[0;33m\]"       # Yellow
 BPurple="\[\033[1;35m\]"      # Purple
 
 export GIT_PS1_SHOWDIRTYSTATE=1
-PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t | \D{%d-%m-%y}) [\u/\h | \w ]"
+#PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t | \D{%d-%m-%y}) [\u/\h | \w ]"
+PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 \t | \D{%d-%m-%y} : \u@\h:\w "
 PS1=$PS1'$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
 	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
@@ -167,12 +168,12 @@ alias gvim='UBUNTU_MENUPROXY= gvim'
 alias g='gvim'
 alias QQ='exit'
 
+
+# ROS-specific
 export CC=clang
 export CXX=clang++
 alias g++='g++ -std=c++11'
 alias clang++='clang++ -std=c++11'
-
-# ROS-specific
 source /opt/ros/kinetic/setup.bash
 source /home/li9i/catkin_ws/devel/setup.bash
 
@@ -186,18 +187,6 @@ synclient TouchpadOff=1
 
 # MATLAB-specific
 #alias matlab='/media/li9i/var/MATLAB_R2018_files/bin/matlab'
-alias matlab='/media/li9i/var/MATLAB/R2019a/bin/matlab'
-alias matlab_cmd='matlab -nodisplay -nosplash'
-
-alias mon='xrandr --output HDMI1 --auto --right-of eDP1'
-alias 4d='python /media/li9i/elements/Pictures/var/chan/pro/threads/ch.py $1'
-alias 4dd='python /home/li9i/Desktop/4dd.py $1'
-
-function matrix_rain() {
-  echo -e "\e[1;40m" ; clear ; while :; do echo $LINES $COLUMNS $(( $RANDOM % $COLUMNS)) $(( $RANDOM % 72 )) ;sleep 0.05; done|gawk '{ letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()"; c=$4; letter=substr(letters,c,1);a[$3]=0;for (x in a) {o=a[x];a[x]=a[x]+1; printf "\033[%s;%sH\033[2;32m%s",o,x,letter; printf "\033[%s;%sH\033[1;37m%s\033[0;0H",a[x],x,letter;if (a[x] >= $1) { a[x]=0; } }}'
-}
-
-alias we="curl http://wttr.in/thessaloniki"
 
 function catkin_build(){
   dir=$PWD;
@@ -216,11 +205,6 @@ cp() { rsync -ah --progress --info=progress2 "$@"; }
 echo "----------------------------"
 date
 echo "----------------------------"
-
-# execute `sign -t PATH_TO_UNSIGNED.pdf -o PATH_TO_SIGNED.pdf -e VERTICAL,RIGHT_MARGIN,LEFT_MARGIN`
-# call java -jar /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/PortableSigner.jar -h for more options
-alias sign="java -jar /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/PortableSigner.jar -b en -n -f -s /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/haricacert.p12 -i /media/li9i/elements/Jobs/LABOUR/DIGITAL_SIGNATURE/portable_signer/linux/MyLogo.png"
-
 
 # route mic to speakers
 alias mic_on="pactl load-module module-loopback latency_msec=1"

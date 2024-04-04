@@ -1,0 +1,448 @@
+# ~/.bashrc: executed by bash(1) for non-login shells.
+# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+# for examples
+
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && return
+
+# don't put duplicate lines or lines starting with space in the history.
+# See bash(1) for more options
+HISTCONTROL=ignoreboth
+
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+HISTSIZE=1000
+HISTFILESIZE=2000
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# If set, the pattern "**" used in a pathname expansion context will
+# match all files and zero or more directories and subdirectories.
+#shopt -s globstar
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# set variable identifying the chroot you work in (used in the prompt below)
+if [ -z "$debian_chroot" ] && [ -r /etc/debian_chroot ]; then
+    debian_chroot=$(cat /etc/debian_chroot)
+fi
+
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color) color_prompt=yes;;
+esac
+
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+#force_color_prompt=yes
+
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+    else
+	color_prompt=
+    fi
+fi
+
+if [ "$color_prompt" = yes ]; then
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+else
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
+
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
+
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
+fi
+
+# some more ls aliases
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Add an "alert" alias for long running commands.  Use like so:
+#   sleep 10; alert
+alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+
+# Alias definitions.
+# You may want to put all your additions into a separate file like
+# ~/.bash_aliases, instead of adding them here directly.
+# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+
+if [ -f ~/.bash_aliases ]; then
+    . ~/.bash_aliases
+fi
+
+# enable programmable completion features (you don't need to enable
+# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+# sources /etc/bash.bashrc).
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
+fi
+
+source /etc/bash_completion.d/git-prompt
+
+Green="\[\033[0;32m\]"        # Green
+IRed="\[\033[0;91m\]"         # Red
+BIYellow="\[\033[1;93m\]"     # Yellow
+Yellow="\[\033[0;33m\]"       # Yellow
+BPurple="\[\033[1;35m\]"      # Purple
+
+export GIT_PS1_SHOWDIRTYSTATE=1
+#PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t | \D{%d-%m-%y}) [\u/\h | \w ]"
+PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 \t | \D{%d-%m-%y} : \u@\h:\w "
+PS1=$PS1'$(git branch &>/dev/null;\
+if [ $? -eq 0 ]; then \
+	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
+	if [ "$?" -eq "0" ]; then \
+		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
+		if [ "$?" -eq "0" ]; then \
+			# @4 - Clean repository - Untracked Files
+			echo "'$BPurple'"$(__git_ps1 "(%s)**"); \
+		else \
+			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
+			if [ "$?" -eq "0" ]; then \
+				# @4 - Clean repository - nothing to commit
+				echo "'$Green'"$(__git_ps1 "(%s)**"); \
+			else \
+				# @5 - Changes to working tree
+				echo "'$IRed'"$(__git_ps1 "(%s)**"); \
+			fi)  "; \
+		fi)"; \
+	else \
+		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
+		if [ "$?" -eq "0" ]; then \
+			# @4 - Clean repository - Untracked Files
+			echo "'$BPurple'"$(__git_ps1 "(%s)"); \
+		else \
+			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
+			if [ "$?" -eq "0" ]; then \
+				# @4 - Clean repository - nothing to commit
+				echo "'$Green'"$(__git_ps1 "(%s)"); \
+			else \
+				# @5 - Changes to working tree
+				echo "'$IRed'"$(__git_ps1 "(%s)"); \
+			fi)  "; \
+		fi)"; \
+	fi)" ;\
+#~ fi \
+#~ else \
+	#~ # @2 - Prompt when not in GIT repo
+	#~ echo " '$Yellow$PathShort$Color_Off' "; \
+fi)';
+#PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
+PS1=$PS1"\n\[\033[0m\]"
+
+alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
+
+export EDITOR='gvim -f'
+set -o vi
+
+alias gvim='UBUNTU_MENUPROXY= gvim'
+alias g='gvim'
+alias QQ='exit'
+
+
+# ROS-specific
+#export CC=clang
+#export CXX=clang++
+#alias g++='g++ -std=c++14'
+#alias clang++='clang++ -std=c++14'
+#source /opt/ros/kinetic/setup.bash
+#source /home/li9i/catkin_ws/devel/setup.bash
+
+
+alias we="curl http://wttr.in/thessaloniki"
+
+#function catkin_build(){
+  #dir=$PWD;
+  #cd /home/li9i/catkin_ws/;
+  #catkin build $1 $2 $3
+  #source /opt/ros/kinetic/setup.bash
+  #source /home/li9i/catkin_ws/devel/setup.bash
+  #cd $dir;
+#}
+
+
+
+# ls after cd
+cd() { builtin cd "$@" && ls; }
+
+echo "----------------------------"
+date
+echo "----------------------------"
+
+alias ocl="octave-cli"
+
+# restart audio drivers
+alias audio_reboot="pulseaudio -k && sudo alsa force-reload"
+
+# creates common bash history among multiple termninals
+# Avoid duplicates
+HISTCONTROL=ignoredups:erasedups
+export HISTSIZE=100000                   # big big history
+export HISTFILESIZE=100000               # big big history
+
+# When the shell exits, append to the history file instead of overwriting it
+shopt -s histappend
+
+# Tab once instead of twice for available options
+bind 'set show-all-if-ambiguous on'
+
+
+
+
+
+# Handy: #xmodmap -e "keycode 94 = Shift_L"
+# If you don't want to put it here (I wouldn't know why) then
+# Record keypresses with
+# xev -event keyboard
+# Remap keys manually by
+# gvim ~/.Xmodmap
+# And test that it works with
+# xmodmap .Xmodmap
+# And then do
+# xkbcomp $DISPLAY $HOME/.xkbmap
+# And then put the following command in the startup applications list
+# xkbcomp /home/UUUUSERRRRR/.xkbmap ":0"
+
+
+# Terminator is broken. 24/10/2023
+#ibus exit
+
+alias pwdsize='du -hd0'
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# Docker functions/aliases
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# ------------------------------------------------------------------------------
+docker_clean(){
+
+  # are any containers currently up?
+  num_containers=$(docker container ls | wc -l)
+
+  if [ $num_containers -gt 1 ]
+  then
+    echo "You have containers running, I cannot remove them without killing them first. I will now just prune dangling images."
+  else
+    running_containers=$(docker ps -aq)
+
+    if [ ! -z "$running_containers" ]
+    then
+      docker container rm  $running_containers
+    fi
+  fi
+
+  docker image prune
+}
+# ------------------------------------------------------------------------------
+docker_killall(){
+
+  # are any containers currently running?
+  num_containers=$(docker ps -a | wc -l)
+
+  if [ $num_containers -gt 1 ]
+  then
+    running_containers=$(docker ps -aq)
+    echo "There are containers running, I will kill them now"
+    docker container stop $running_containers
+    docker container kill $running_containers
+  else
+    echo "No containers running."
+  fi
+}
+
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# ROS-specific :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+export CC=gcc
+export CXX=g++
+
+#export ROS_DOMAIN_ID=0
+export ROS_LOCALHOST_ONLY=0
+
+# ROS + my overlay
+source /opt/ros/humble/setup.bash
+source /home/afilot/ros2_ws/install/local_setup.bash
+export ROS_DOMAIN_ID=128 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# DDS choice (https://github.com/sea-bass/turtlebot3_behavior_demos#local-setup)
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export CYCLONEDDS_URI=file://$HOME/cyclonedds.conf.xml
+
+# The statement below:
+#source /home/afilot/ros2_ws/install/setup.bash # ROS + my overlay
+# is equivalent to these two:
+#source /opt/ros/humble/setup.bash
+#source /home/afilot/ros2_ws/install/local_setup.bash
+
+# colcon_cd mimics roscd
+source /usr/share/colcon_cd/function/colcon_cd.sh
+export _colcon_cd_root=/opt/ros/humble/
+alias roscd='colcon_cd'
+
+# colcon command completion
+source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash
+
+# give color to rclcpp_{warn, error}
+export RCUTILS_COLORIZED_OUTPUT=1
+
+# if your ROS2 command does not auto-complete, put the following two lines into your .bashrc
+eval "$(register-python-argcomplete3 ros2)"
+eval "$(register-python-argcomplete3 colcon)"
+
+# By default, ROS 2 logger doesn't output detailed information such as file name, function name, or line number. To customize it, write the following in your .bashrc:
+# export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message} ({function_name}() at {file_name}:{line_number})"
+
+
+# Build {1|all} workspace package{|s} from wherever
+function colcon_build(){
+  dir=$PWD;
+  cd /home/afilot/ros2_ws/;
+
+  if [ -z "$@" ]
+  then
+    colcon build
+  else
+    colcon build --packages-select "$@"
+  fi
+
+  source /opt/ros/humble/setup.bash
+  source /home/afilot/ros2_ws/install/local_setup.bash
+  cd $dir;
+}
+
+# Clean colcon {1|all} workspace package{|s} from wherever
+# https://github.com/colcon/colcon-clean
+function colcon_clean(){
+  dir=$PWD;
+  cd /home/afilot/ros2_ws/;
+
+  if [ -z "$@" ]
+  then
+    colcon clean workspace
+  else
+    colcon clean packages --packages-select "$@"
+  fi
+
+  cd $dir;
+}
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# Autocomplete stuff
+bind 'set show-all-if-ambiguous on'
+bind '"\e[Z":menu-complete-backward'
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+bind 'TAB:menu-complete'
+
+# https://superuser.com/a/1504199/1236116
+bind 'set menu-complete-display-prefix on'
+bind 'set colored-completion-prefix on'
+bind 'set colored-stats on'
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+
+
+
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# This function should reside at the end of this file (.bashrc)
+# Automatically add completion for all aliases to commands having completion functions
+# Source: https://superuser.com/a/437508/1236116
+function alias_completion {
+    local namespace="alias_completion"
+
+    # parse function based completion definitions, where capture group 2 => function and 3 => trigger
+    local compl_regex='complete( +[^ ]+)* -F ([^ ]+) ("[^"]+"|[^ ]+)'
+    # parse alias definitions, where capture group 1 => trigger, 2 => command, 3 => command arguments
+    local alias_regex="alias ([^=]+)='(\"[^\"]+\"|[^ ]+)(( +[^ ]+)*)'"
+
+    # create array of function completion triggers, keeping multi-word triggers together
+    eval "local completions=($(complete -p | sed -Ene "/$compl_regex/s//'\3'/p"))"
+    (( ${#completions[@]} == 0 )) && return 0
+
+    # create temporary file for wrapper functions and completions
+    rm -f "/tmp/${namespace}-*.tmp" # preliminary cleanup
+    local tmp_file; tmp_file="$(mktemp "/tmp/${namespace}-${RANDOM}XXX.tmp")" || return 1
+
+    local completion_loader; completion_loader="$(complete -p -D 2>/dev/null | sed -Ene 's/.* -F ([^ ]*).*/\1/p')"
+
+    # read in "<alias> '<aliased command>' '<command args>'" lines from defined aliases
+    local line; while read line; do
+        eval "local alias_tokens; alias_tokens=($line)" 2>/dev/null || continue # some alias arg patterns cause an eval parse error
+        local alias_name="${alias_tokens[0]}" alias_cmd="${alias_tokens[1]}" alias_args="${alias_tokens[2]# }"
+
+        # skip aliases to pipes, boolean control structures and other command lists
+        # (leveraging that eval errs out if $alias_args contains unquoted shell metacharacters)
+        eval "local alias_arg_words; alias_arg_words=($alias_args)" 2>/dev/null || continue
+        # avoid expanding wildcards
+        read -a alias_arg_words <<< "$alias_args"
+
+        # skip alias if there is no completion function triggered by the aliased command
+        if [[ ! " ${completions[*]} " =~ " $alias_cmd " ]]; then
+            if [[ -n "$completion_loader" ]]; then
+                # force loading of completions for the aliased command
+                eval "$completion_loader $alias_cmd"
+                # 124 means completion loader was successful
+                [[ $? -eq 124 ]] || continue
+                completions+=($alias_cmd)
+            else
+                continue
+            fi
+        fi
+        local new_completion="$(complete -p "$alias_cmd")"
+
+        # create a wrapper inserting the alias arguments if any
+        if [[ -n $alias_args ]]; then
+            local compl_func="${new_completion/#* -F /}"; compl_func="${compl_func%% *}"
+            # avoid recursive call loops by ignoring our own functions
+            if [[ "${compl_func#_$namespace::}" == $compl_func ]]; then
+                local compl_wrapper="_${namespace}::${alias_name}"
+                    echo "function $compl_wrapper {
+                        (( COMP_CWORD += ${#alias_arg_words[@]} ))
+                        COMP_WORDS=($alias_cmd $alias_args \${COMP_WORDS[@]:1})
+                        (( COMP_POINT -= \${#COMP_LINE} ))
+                        COMP_LINE=\${COMP_LINE/$alias_name/$alias_cmd $alias_args}
+                        (( COMP_POINT += \${#COMP_LINE} ))
+                        $compl_func
+                    }" >> "$tmp_file"
+                    new_completion="${new_completion/ -F $compl_func / -F $compl_wrapper }"
+            fi
+        fi
+
+        # replace completion trigger by alias
+        new_completion="${new_completion% *} $alias_name"
+        echo "$new_completion" >> "$tmp_file"
+    done < <(alias -p | sed -Ene "s/$alias_regex/\1 '\2' '\3'/p")
+    source "$tmp_file" && rm -f "$tmp_file"
+}; alias_completion
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
