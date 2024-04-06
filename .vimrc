@@ -278,3 +278,6 @@ augroup END
 
 autocmd FileType text setlocal nocindent
 autocmd FileType tex setlocal nocindent
+
+imap <C-BS> <C-W>
+imap <C-Del> <Esc>lce
