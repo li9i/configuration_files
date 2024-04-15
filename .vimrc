@@ -279,5 +279,15 @@ augroup END
 autocmd FileType text setlocal nocindent
 autocmd FileType tex setlocal nocindent
 
+" Map Ctrl-Backspace to delete the previous word in insert mode.
 imap <C-BS> <C-W>
 imap <C-Del> <Esc>lce
+
+" This unsets the last search pattern register by hitting return
+"nnoremap <CR> :noh<CR><CR>
+
+" Highlight the word under the cursor like *, but do not move the cursor.
+" Then map * to left-click
+" https://stackoverflow.com/questions/6876850/how-to-highlight-all-occurrences-of-a-word-in-vim-on-double-clicking
+nnoremap <silent> <2-LeftMouse> :let @/='\V\<'.escape(expand('<cword>'), '\').'\>'<cr>:set hls<cr>
+:map * <2-LeftMouse>
