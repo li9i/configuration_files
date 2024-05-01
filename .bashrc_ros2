@@ -259,8 +259,9 @@ docker_clean(){
       docker container rm  $running_containers
     fi
   fi
-
-  docker image prune
+  
+  # I don't want to enter `y` every time I call this function ([y/N])
+  yes | docker image prune
 }
 # ------------------------------------------------------------------------------
 docker_killall(){
