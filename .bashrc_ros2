@@ -242,7 +242,7 @@ alias pwdsize='du -hd0'
 # Docker functions/aliases
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ------------------------------------------------------------------------------
-docker_clean(){
+docker_cleanall(){
 
   # are any containers currently up?
   num_containers=$(docker container ls | wc -l)
@@ -259,7 +259,7 @@ docker_clean(){
       docker container rm  $running_containers
     fi
   fi
-  
+
   # I don't want to enter `y` every time I call this function ([y/N])
   yes | docker image prune
 }
