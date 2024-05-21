@@ -247,7 +247,7 @@ docker_cleanall(){
   # are any containers currently up?
   num_containers=$(docker container ls | wc -l)
 
-  if [ $num_containers -ge 1 ]
+  if [ $num_containers -gt 1 ]
   then
     echo "You have containers running, I cannot remove them without killing them first. I will now just prune dangling images."
   else
@@ -269,7 +269,7 @@ docker_killall(){
   # are any containers currently running?
   num_containers=$(docker ps -a | wc -l)
 
-  if [ $num_containers -ge 1 ]
+  if [ $num_containers -gt 1 ]
   then
     running_containers=$(docker ps -aq)
     echo "There are containers running, they will be killed now"
