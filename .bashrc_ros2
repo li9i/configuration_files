@@ -77,6 +77,7 @@ if [ -x /usr/bin/dircolors ]; then
     #alias vdir='vdir --color=auto'
 
     alias grep='grep --color=auto'
+    alias grp='grep -rEIn'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
 fi
@@ -242,14 +243,14 @@ alias pwdsize='du -hd0'
 # Docker functions/aliases
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ------------------------------------------------------------------------------
-docker_cleanall(){
+docker_clean(){
 
   # are any containers currently up?
   num_containers=$(docker container ls | wc -l)
 
   if [ $num_containers -gt 1 ]
   then
-    echo "You have containers running, I cannot remove them without killing them first. I will now just prune dangling images."
+    echo "There are containers running, and I cannot remove them without killing them first. I will now just prune dangling images."
   else
     running_containers=$(docker ps -aq)
 
@@ -264,15 +265,21 @@ docker_cleanall(){
   yes | docker image prune
 }
 # ------------------------------------------------------------------------------
+docker_cleanall(){
+
+  # I don't want to enter `y` every time I call this function ([y/N])
+  yes | docker system prune
+}
+# ------------------------------------------------------------------------------
 docker_killall(){
 
   # are any containers currently running?
-  num_containers=$(docker ps -a | wc -l)
+  num_containers=$(docker ps -aq | wc -l)
 
-  if [ $num_containers -gt 1 ]
+  if [ $num_containers -gt 0 ]
   then
     running_containers=$(docker ps -aq)
-    echo "There are containers running, they will be killed now"
+    echo "Running containers will be killed now"
     docker container kill $running_containers
     docker container rm  $running_containers
   else
@@ -280,8 +287,31 @@ docker_killall(){
   fi
 }
 # ------------------------------------------------------------------------------
+docker_volumes_remove(){
+  # https://stackoverflow.com/a/40654726/5297684
+  docker volume rm $(docker volume ls -qf dangling=true)
+}
+# ------------------------------------------------------------------------------
+docker_remove(){
+  if [ -v "$1" ] # argument exists?
+  then
+    echo "Attempting to kill and rm container $1"
+    docker container kill $1 > /dev/null
+    docker container rm  $1
+  fi
+}
+# ------------------------------------------------------------------------------
+docker_ls(){
 
+  # are any containers currently running?
+  num_containers=$(docker ps -a | wc -l)
 
+  if [ $num_containers -gt 1 ]
+  then
+    docker ps -q | xargs -n1 docker inspect --format '{{.Name}}'
+  fi
+}
+# ------------------------------------------------------------------------------
 
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ROS-specific :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -326,6 +356,7 @@ eval "$(register-python-argcomplete3 colcon)"
 # export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity} {time}] [{name}]: {message} ({function_name}() at {file_name}:{line_number})"
 
 
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # Build {1|all} workspace package{|s} from wherever
 function colcon_build(){
   dir=$PWD;
