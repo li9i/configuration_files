@@ -160,7 +160,10 @@ fi)';
 #PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
 PS1=$PS1"\n\[\033[0m\]"
 
-source .tmux-bash-autocompletion
+source ~/.tmux-bash-autocompletion
+tmux_killall(){
+  tmux kill-server
+}
 
 
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
