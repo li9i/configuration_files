@@ -222,24 +222,6 @@ shopt -s histappend
 # Tab once instead of twice for available options
 bind 'set show-all-if-ambiguous on'
 
-
-
-
-
-# Handy: #xmodmap -e "keycode 94 = Shift_L"
-# If you don't want to put it here (I wouldn't know why) then
-# Record keypresses with
-# xev -event keyboard
-# Remap keys manually by
-# gvim ~/.Xmodmap
-# And test that it works with
-# xmodmap .Xmodmap
-# And then do
-# xkbcomp $DISPLAY $HOME/.xkbmap
-# And then put the following command in the startup applications list
-# xkbcomp /home/UUUUSERRRRR/.xkbmap ":0"
-
-
 # Terminator is broken. 24/10/2023
 #ibus exit
 
@@ -285,9 +267,9 @@ docker_killall(){
   if [ $num_containers -gt 0 ]
   then
     running_containers=$(docker ps -aq)
-    echo "Running containers will be killed now"
     docker container kill $running_containers
     docker container rm  $running_containers
+    echo "Killed running containers"
   else
     echo "No containers are running"
   fi
@@ -301,9 +283,9 @@ docker_volumes_remove(){
 docker_remove(){
   if [ -v "$1" ] # argument exists?
   then
-    echo "Attempting to kill and rm container $1"
     docker container kill $1 > /dev/null
     docker container rm  $1
+    echo "Killed and removed container $1"
   fi
 }
 # ------------------------------------------------------------------------------
@@ -343,10 +325,8 @@ export CYCLONEDDS_URI=file://$HOME/cyclonedds.conf.xml
 #source /opt/ros/humble/setup.bash
 #source /home/afilot/ros2_ws/install/local_setup.bash
 
-# colcon_cd mimics roscd
-source /usr/share/colcon_cd/function/colcon_cd.sh
-export _colcon_cd_root=/opt/ros/humble/
-alias roscd='colcon_cd'
+# https://github.com/Martin-Oehler/ros2cd
+source ~/.ros2cd.sh
 
 # colcon command completion
 source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash
@@ -404,7 +384,7 @@ bind 'set show-all-if-ambiguous on'
 bind '"\e[Z":menu-complete-backward'
 bind '"\e[A": history-search-backward'
 bind '"\e[B": history-search-forward'
-bind 'TAB:menu-complete'
+#bind 'TAB:menu-complete'
 
 # https://superuser.com/a/1504199/1236116
 bind 'set menu-complete-display-prefix on'
