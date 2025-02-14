@@ -160,13 +160,58 @@ fi)';
 #PS1=$PS1"\n\[\033[0m\]\342\226\210\342\226\210 "
 PS1=$PS1"\n\[\033[0m\]"
 
+alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
+
+git-status-all(){
+  # Directory containing your Git repositories
+  REPO_DIR="$1"
+
+  # If no directory is provided, use the current directory
+  if [[ -z "$REPO_DIR" ]]; then
+    REPO_DIR="."
+  fi
+
+  # Iterate over each directory in the REPO_DIR
+  for repo in "$REPO_DIR"/*/; do
+
+    # Exit if it's not a git repo
+    if [ ! -d "$repo/.git" ]; then
+      continue
+    fi
+
+    # Remove the trailing slash from the directory name
+    repo=${repo%/}
+
+    # Get the base name of the repository (without the full path)
+    repo_name=$(basename "$repo")
+
+    # Check the Git status using the -C flag to avoid changing directories
+    status=$(git -C "$repo" status --porcelain 2>/dev/null)
+
+    # Determine the color based on the status
+    if [[ -n $(echo "$status" | grep '^M') ]]; then
+      # Changes staged (red)
+      color="\e[31m"
+    elif [[ -n $(echo "$status" | grep '^ M') ]]; then
+      # Changes not staged (red)
+      color="\e[31m"
+    elif [[ -z "$status" ]]; then
+      # Clean (green)
+      color="\e[32m"
+    else
+      # Unknown status (yellow)
+      color="\e[33m"
+    fi
+
+    # Print the repository name in the appropriate color
+    echo -e "${color}${repo_name}\e[0m"
+  done
+}
+
 source ~/.tmux-bash-autocompletion
 tmux_killall(){
   tmux kill-server
 }
-
-
-alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 
 export EDITOR='gvim -f'
 set -o vi
