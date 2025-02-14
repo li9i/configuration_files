@@ -161,90 +161,135 @@ PS1=$PS1"\n\[\033[0m\]"
 
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 
+# ------------------------------------------------------------------------------
 git-status-all(){
-  # directory containing your git repositories
-  repo_dir="$1"
+  # Directory containing your Git repositories
+  branch_to_check="$1"
 
-  # if no directory is provided, use the current directory
-  if [[ -z "$repo_dir" ]]; then
-    repo_dir="."
+  if [[ -z "$branch_to_check" ]]; then
+    branch_to_check="main"
   fi
 
-  # iterate over each directory in the repo_dir
-  for repo in "$repo_dir"/*/; do
+  # Use the current directory
+  REPO_DIR="."
 
-    # exit if it's not a git repo
+  # Iterate over each directory in the REPO_DIR
+  for repo in "$REPO_DIR"/*/; do
+
+    # Exit if it's not a git repo
     if [ ! -d "$repo/.git" ]; then
       continue
     fi
 
-    # remove the trailing slash from the directory name
+    # Remove the trailing slash from the directory name
     repo=${repo%/}
 
-    # get the base name of the repository (without the full path)
+    # Get the base name of the repository (without the full path)
     repo_name=$(basename "$repo")
 
-    # check the git status using the -c flag to avoid changing directories
-    status=$(git -c "$repo" status --porcelain 2>/dev/null)
+    # Check the Git status using the -C flag to avoid changing directories
+    status=$(git -C "$repo" status --porcelain 2>/dev/null)
 
-    # determine the color based on the status
-    if [[ -n $(echo "$status" | grep '^m') ]]; then
-      # changes staged (red)
+    # Determine the color based on the status
+    if [[ -n $(echo "$status" | grep '^M') ]]; then
+      # Changes staged (red)
       color="\e[31m"
-    elif [[ -n $(echo "$status" | grep '^ m') ]]; then
-      # changes not staged (red)
+      check_sync=1
+    elif [[ -n $(echo "$status" | grep '^ M') ]]; then
+      # Changes not staged (red)
       color="\e[31m"
+      check_sync=1
     elif [[ -z "$status" ]]; then
-      # clean (green)
+      # Clean (green)
       color="\e[32m"
+      check_sync=0
     else
-      # unknown status (yellow)
+      # Unknown status (yellow)
       color="\e[33m"
+      check_sync=1
     fi
 
-    # print the repository name in the appropriate color
+
+    # Print the repository name in the appropriate color
     echo -e "${color}${repo_name}\e[0m"
+
+    # Check if the repository is
+    if [ "$check_sync" -eq 0 ]; then
+      git-is-local-synced-with-remote $branch_to_check $repo
+    fi
   done
 }
-
+# ------------------------------------------------------------------------------
 git-is-local-synced-with-remote() {
   local branch="$1"
+  local repo_dir="$2"
 
   if [[ -z "$branch" ]]; then
-    echo "Usage: is_branch_aligned <branch_name>"
+    echo "Usage: branch_sync <branch_name> [<repo_directory>]"
     return 1
   fi
 
+  # Check if repo_dir is provided and is a valid directory
+  if [[ -n "$repo_dir" && ! -d "$repo_dir" ]]; then
+    echo "Error: '$repo_dir' is not a valid directory."
+    return 1
+  fi
+
+  # Use the provided repo_dir or assume the current directory
+  local git_dir
+  if [[ -n "$repo_dir" ]]; then
+      git_dir="$repo_dir"
+  else
+      git_dir="." # Current directory
+  fi
+
+  # Check if it's a git repository (inside the given directory or current dir)
+  if ! command -v git &> /dev/null || ! git -C "$git_dir" rev-parse --is-inside-work-tree &> /dev/null; then
+    echo "Error: Not a Git repository (in $git_dir)."
+    return 1
+  fi
+
+
   # Check if the branch exists locally
-  if ! git show-ref --verify "refs/heads/$branch" > /dev/null; then
+  if ! git -C "$git_dir" show-ref --verify "refs/heads/$branch" > /dev/null; then
     echo "Branch '$branch' does not exist locally."
     return 1
   fi
 
   # Check if the remote tracking branch exists
-  if ! git show-ref --verify "refs/remotes/origin/$branch" > /dev/null; then
+  if ! git -C "$git_dir" show-ref --verify "refs/remotes/origin/$branch" > /dev/null; then
       echo "Remote branch 'origin/$branch' does not exist."
       return 1
   fi
 
 
   # Get the SHA-1 hash of the local branch
-  local local_sha=$(git rev-parse "refs/heads/$branch")
+  local local_sha=$(git -C "$git_dir" rev-parse "refs/heads/$branch")
 
   # Get the SHA-1 hash of the remote tracking branch
-  local remote_sha=$(git rev-parse "refs/remotes/origin/$branch")
+  local remote_sha=$(git -C "$git_dir" rev-parse "refs/remotes/origin/$branch")
+
+  # Define colors (you can customize these)
+  GREEN='\033[0;32m'
+  RED='\033[0;31m'
+  NC='\033[0m'  # No Color (reset)
+
+  # ... (rest of the code) ...
 
   # Compare the SHA-1 hashes
   if [[ "$local_sha" == "$remote_sha" ]]; then
-    echo "Branch '$branch' is up to date with origin/$branch."
+    echo -e "${NC}Branch '$branch' is aligned up to date with origin/$branch.${NC}"
     return 0  # Return 0 for success (aligned)
   else
-    echo "Branch '$branch' is NOT up to date with origin/$branch."
+    echo -e "${RED}Branch '$branch' is NOT up to date with origin/$branch.${NC}"
     echo "Local SHA: $local_sha"
     echo "Remote SHA: $remote_sha"
     return 1  # Return 1 for failure (not aligned)
   fi
 }
+# ==============================================================================
+
+
 source .tmux-bash-autocompletion
 tmux_killall(){
   tmux kill-server
