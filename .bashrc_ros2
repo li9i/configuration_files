@@ -289,6 +289,134 @@ git-is-local-synced-with-remote() {
   fi
 }
 # ==============================================================================
+# http-server - Quickly spin up a simple HTTP server for a directory.
+#
+# This is basically just a simple wrapper script for python's http.server;
+# https://docs.python.org/3/library/http.server.html
+# ==============================================================================
+httphere(){
+
+  script="$(basename "$0")"
+
+  # Function to display help
+  display_help() {
+      echo "$script - Quickly spin up a simple HTTP server for a directory."
+      echo "Usage: $script [arguments]"
+      echo
+      echo "  -h/--help - Print help and exit."
+      echo "  -p/--port - Set the port number to bind to (defaults to 10337)."
+      echo "  -d/--directory - Set the root directory to serve from (defaults to current)."
+      exit 0
+  }
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+      case "$1" in
+          -h|--help)
+              display_help
+              ;;
+          -p|--port)
+              port="$2"
+              shift
+              ;;
+          -d|--directory)
+              directory="$2"
+              shift
+              ;;
+          *)
+              echo "Unknown option: $1"
+              display_help
+              ;;
+      esac
+      shift
+  done
+
+  # Set default values
+  port=${port:-10337}
+  directory=${directory:-$(pwd)}
+
+  # Check if the port is below 1024 and warn the user
+  if [[ $port -lt 1024 ]]; then
+      echo "Warning: Ports below 1024 require root privileges."
+      echo "Please run this script with 'sudo' if you intend to use port $port."
+      exit 1
+  fi
+
+  # Start the HTTP server
+  ip=$(curl ifconfig.me/ip)
+  echo "Serving HTTP on http://$ip:$port from directory [$directory]"
+  python3 -m http.server --bind 0.0.0.0 --directory "$directory" "$port"
+}
+# ==============================================================================
+# Find the n most recently modified files in a given directory
+# ==============================================================================
+recently() {
+    local script="recently"
+    local dir="${1:-$PWD}"  # Default to current directory
+    local limit="${2:-10}"  # Default limit is 10
+    shift 2  # Remove the first two arguments (dir and limit) from $@
+
+    # Parse arguments
+    local exclude_dirs=(".git")  # Default exclude .git directory
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                echo "$script - Recursively list the contents of a directory in modification order, most recent first."
+                echo "Usage: $script [directory] [limit] [options]"
+                echo
+                echo "  directory - Directory to search in (default: \$PWD)."
+                echo "  limit     - Maximum number of files to output (default: 10)."
+                echo "  -h/--help - Print help and exit."
+                echo "  -e/--exclude - Exclude a directory (default: .git is excluded)."
+                return 0
+                ;;
+            -e|--exclude)
+                exclude_dirs+=("$2")
+                shift
+                ;;
+            *)
+                echo "Unknown option: $1" >&2
+                return 1
+                ;;
+        esac
+        shift
+    done
+
+    # Determine which find command to use
+    local find_cmd
+    if command -v bfs &> /dev/null; then
+        find_cmd="bfs"
+        local extra_args=""
+    else
+        find_cmd="find"
+        local extra_args=""
+    fi
+
+    # Build exclude arguments
+    local exclude_args=()
+    for path in "${exclude_dirs[@]}"; do
+        path="$(realpath "$path" 2>/dev/null || echo "$dir/$path")"  # Resolve path or treat as relative
+        if [[ "$path" != "$dir"/* ]]; then
+            echo "$script: --exclude must specify a directory within the search directory ($dir)." >&2
+            return 1
+        fi
+        path="$(echo "$path" | sed 's|^'"$dir"'/||')"
+        exclude_args+=(-not \( -path "./$path/*" -prune \))
+    done
+
+    # Execute the find command
+    local output
+    output=$(
+        $find_cmd "$dir" "${exclude_args[@]}" "$@" $extra_args -type f -printf '%T@ %p\n' |
+        sort -k 1 -n |
+        sed -E 's/^[^ ]+ //' |
+        tac
+    )
+
+    # Apply limit
+    echo "$output" | head -n "$limit"
+}
+# ==============================================================================
 
 source ~/.tmux-bash-autocompletion
 tmux_killall(){
