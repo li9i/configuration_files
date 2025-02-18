@@ -75,6 +75,9 @@ xterm*|rxvt*)
 *)
     ;;
 esac
+
+# Helps with pasting multi-line text into a terminal
+bind 'set enable-bracketed-paste off'
 # ==============================================================================
 # ALIAS
 # ==============================================================================
