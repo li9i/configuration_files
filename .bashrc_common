@@ -86,7 +86,7 @@ if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
     alias ls='ls --color=auto'
     alias grep='grep --color=auto'
-    alias grp='grep -rEIn'
+    alias greprein='grep -rEIn'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
 fi
@@ -273,14 +273,13 @@ git-is-local-synced-with-remote() {
   local local_sha=$(git -C "$git_dir" rev-parse "refs/heads/$branch")
 
   # Get the SHA-1 hash of the remote tracking branch
+  git -C "$git_dir" fetch origin
   local remote_sha=$(git -C "$git_dir" rev-parse "refs/remotes/origin/$branch")
 
   # Define colors (you can customize these)
   GREEN='\033[0;32m'
   RED='\033[0;31m'
   NC='\033[0m'  # No Color (reset)
-
-  # ... (rest of the code) ...
 
   # Compare the SHA-1 hashes
   if [[ "$local_sha" == "$remote_sha" ]]; then
