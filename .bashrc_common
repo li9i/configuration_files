@@ -281,7 +281,7 @@ git-is-local-synced-with-remote() {
 
   # Compare the SHA-1 hashes
   if [[ "$local_sha" == "$remote_sha" ]]; then
-    echo -e "${NC}Branch '$branch' is aligned up to date with origin/$branch.${NC}"
+    echo -e "${NC}Branch '$branch' is up to date with origin/$branch.${NC}"
     return 0  # Return 0 for success (aligned)
   else
     echo -e "${RED}Branch '$branch' is NOT up to date with origin/$branch.${NC}"
