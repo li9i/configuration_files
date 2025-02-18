@@ -275,7 +275,7 @@ git-is-local-synced-with-remote() {
   local local_sha=$(git -C "$git_dir" rev-parse "refs/heads/$branch")
 
   # Get the SHA-1 hash of the remote tracking branch
-  git -C "$git_dir" fetch origin
+  git -C "$git_dir" fetch origin &> /dev/null
   local remote_sha=$(git -C "$git_dir" rev-parse "refs/remotes/origin/$branch")
 
   # Define colors
