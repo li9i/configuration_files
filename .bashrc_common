@@ -168,7 +168,7 @@ PS1=$PS1"\n\[\033[0m\]"
 # ------------------------------------------------------------------------------
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
-git-status-all(){
+git-multistatus(){
   # Directory containing your Git repositories
   branch_to_check="$1"
 
