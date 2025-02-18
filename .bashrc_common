@@ -290,8 +290,8 @@ git-is-local-synced-with-remote() {
     return 0  # Return 0 for success (aligned)
   else
     echo -e "${YELLOW}Branch '$branch' is NOT up to date with origin/$branch.${NC}"
-    echo "Local SHA: $local_sha"
-    echo "Remote SHA: $remote_sha"
+    #echo "Local SHA: $local_sha"
+    #echo "Remote SHA: $remote_sha"
     return 1  # Return 1 for failure (not aligned)
   fi
 }
