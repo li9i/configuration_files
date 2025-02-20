@@ -208,7 +208,7 @@ git-multistatus(){
     elif [[ -z "$status" ]]; then
       # Clean (green)
       color="\e[32m"
-      check_sync=0
+      check_sync=1
     else
       # Unknown status (yellow)
       color="\e[33m"
@@ -217,12 +217,11 @@ git-multistatus(){
 
 
     # Print the repository name in the appropriate color
-    echo -e "${color}----------------------------\e[0m"
+    echo -e "——————————————————————————————————————————————\e[0m"
     echo -e "${color}${repo_name}\e[0m"
-    echo -e "${color}----------------------------\e[0m"
 
     # Check if the repository is
-    if [ "$check_sync" -eq 0 ]; then
+    if [ "$check_sync" -eq 1 ]; then
       git-is-local-synced-with-remote $branch_to_check $repo
     fi
   done
@@ -286,10 +285,10 @@ git-is-local-synced-with-remote() {
 
   # Compare the SHA-1 hashes
   if [[ "$local_sha" == "$remote_sha" ]]; then
-    echo -e "${NC}Branch '$branch' is up to date with origin/$branch.${NC}"
+    echo -e "  ${NC}Branch '$branch' is up to date with origin/$branch.${NC}"
     return 0  # Return 0 for success (aligned)
   else
-    echo -e "${YELLOW}Branch '$branch' is NOT up to date with origin/$branch.${NC}"
+    echo -e "  ${YELLOW}Branch '$branch' is NOT up to date with origin/$branch.${NC}"
     #echo "Local SHA: $local_sha"
     #echo "Remote SHA: $remote_sha"
     return 1  # Return 1 for failure (not aligned)
