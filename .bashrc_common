@@ -217,7 +217,7 @@ git-multistatus(){
 
 
     # Print the repository name in the appropriate color
-    echo -e "——————————————————————————————————————————————\e[0m"
+    echo -e "————————————————————————————————————————————————\e[0m"
     echo -e "${color}${repo_name}\e[0m"
 
     # Check if the repository is
