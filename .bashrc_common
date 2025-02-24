@@ -179,6 +179,34 @@ git-multistatus(){
   # Use the current directory
   REPO_DIR="."
 
+  # ----------------------------------------------------------------------------
+  # Determine the maximum length of repository name
+  # Initialize the maximum width
+  max_width=0
+
+  # First loop: Find the maximum width of repository names
+  for repo in "$REPO_DIR"/*/; do
+    # Exit if it's not a git repo
+    if [ ! -d "$repo/.git" ]; then
+      continue
+    fi
+
+    # Remove the trailing slash from the directory name
+    repo=${repo%/}
+
+    # Get the base name of the repository (without the full path)
+    repo_name=$(basename "$repo")
+
+    # Update the maximum width if this repository name is longer
+    if [[ ${#repo_name} -gt $max_width ]]; then
+      max_width=${#repo_name}
+    fi
+  done
+
+  # Add some padding to the maximum width (e.g., 2 extra spaces)
+  max_width=$((max_width + 2))
+  # ----------------------------------------------------------------------------
+
   # Iterate over each directory in the REPO_DIR
   for repo in "$REPO_DIR"/*/; do
 
@@ -217,10 +245,11 @@ git-multistatus(){
 
 
     # Print the repository name in the appropriate color
-    echo -e "————————————————————————————————————————————————\e[0m"
-    echo -e "${color}${repo_name}\e[0m"
+    echo -e "——————————————————————————————————————————————————————————————————————————————\e[0m"
+    #echo -ne "${color}${repo_name}\e[0m"
+    printf "${color}%-${max_width}s\e[0m" "$repo_name"
 
-    # Check if the repository is
+    # Check if the repository's HEAD matches origin/HEAD
     if [ "$check_sync" -eq 1 ]; then
       git-is-local-synced-with-remote $branch_to_check $repo
     fi
