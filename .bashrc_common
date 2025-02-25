@@ -324,6 +324,21 @@ git-is-local-synced-with-remote() {
   fi
 }
 # ==============================================================================
+# Grep text and replace it
+# ==============================================================================
+greprep() {
+    if [ $# -ne 2 ]; then
+        echo "Usage: greprep <search_pattern> <replacement_text>"
+        return 1
+    fi
+
+    local search_pattern="$1"
+    local replacement_text="$2"
+
+    # Use grep to find files containing the search pattern and pass them to sed for replacement
+    grep -rlF "$search_pattern" . | xargs sed -i "s|${search_pattern}|${replacement_text}|g"
+}
+# ==============================================================================
 # http-server - Quickly spin up a simple HTTP server for a directory.
 #
 # This is basically just a simple wrapper script for python's http.server;
