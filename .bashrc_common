@@ -1,3 +1,27 @@
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+# TABLE OF CONTENTS
+# - HISTORY
+# - PROMPT
+# - ALIAS
+# - COMPLETION
+# - GIT
+# -- git prompt (PS1)
+# -- git-tree()
+# -- git-multistatus()
+# -- git-is-local-synced-with-remote()
+# - TMUX
+# - VARIOUS
+# -- httphere()
+# -- grep_and_replace()
+# -- find_and_rename()
+# -- recently()
+# - DOCKER
+# -- docker_clean()
+# -- docker_cleanall()
+# -- docker_killall()
+# -- docker_ls()
+# -- docker_volumes_remove()
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # ==============================================================================
 # If not running interactively, don't do anything
 [ -z "$PS1" ] && return
@@ -76,6 +100,10 @@ xterm*|rxvt*)
     ;;
 esac
 
+echo "----------------------------"
+date
+echo "----------------------------"
+
 # Helps with pasting multi-line text into a terminal
 bind 'set enable-bracketed-paste off'
 # ==============================================================================
@@ -94,6 +122,10 @@ fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+# ------------------------------------------------------------------------------
+# ls after cd: my absolute favorite
+cd() { builtin cd "$@" && ls; }
+cp() { rsync -ah --progress --info=progress2 "$@"; }
 # ==============================================================================
 # COMPLETION
 # ==============================================================================
@@ -238,8 +270,8 @@ git-multistatus(){
       color="\e[32m"
       check_sync=1
     else
-      # Unknown status (yellow)
-      color="\e[33m"
+      # Unknown status (red)
+      color="\e[31m"
       check_sync=1
     fi
 
@@ -314,14 +346,81 @@ git-is-local-synced-with-remote() {
 
   # Compare the SHA-1 hashes
   if [[ "$local_sha" == "$remote_sha" ]]; then
-    echo -e "  ${NC}Branch '$branch' is up to date with origin/$branch.${NC}"
+    echo -e "  ${NC}Branch '$branch' is up to date with origin/$branch${NC}"
     return 0  # Return 0 for success (aligned)
   else
-    echo -e "  ${YELLOW}Branch '$branch' is NOT up to date with origin/$branch.${NC}"
+    echo -e "  ${YELLOW}Branch '$branch' is NOT up to date with origin/$branch${NC}"
     #echo "Local SHA: $local_sha"
     #echo "Remote SHA: $remote_sha"
     return 1  # Return 1 for failure (not aligned)
   fi
+}
+# ==============================================================================
+# TMUX
+# ==============================================================================
+source ~/.tmux-bash-autocompletion
+# ------------------------------------------------------------------------------
+tmux_killserver(){
+  tmux kill-server
+}
+# ==============================================================================
+# http-server - Quickly spin up a simple HTTP server for a directory.
+#
+# This is basically just a simple wrapper script for python's http.server;
+# https://docs.python.org/3/library/http.server.html
+# ==============================================================================
+httphere(){
+
+  script="$(basename "$0")"
+
+  # Function to display help
+  display_help() {
+      echo "$script - Quickly spin up a simple HTTP server for a directory."
+      echo "Usage: $script [arguments]"
+      echo
+      echo "  -h/--help - Print help and exit."
+      echo "  -p/--port - Set the port number to bind to (defaults to 10337)."
+      echo "  -d/--directory - Set the root directory to serve from (defaults to current)."
+      exit 0
+  }
+
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+      case "$1" in
+          -h|--help)
+              display_help
+              ;;
+          -p|--port)
+              port="$2"
+              shift
+              ;;
+          -d|--directory)
+              directory="$2"
+              shift
+              ;;
+          *)
+              echo "Unknown option: $1"
+              display_help
+              ;;
+      esac
+      shift
+  done
+
+  # Set default values
+  port=${port:-10337}
+  directory=${directory:-$(pwd)}
+
+  # Check if the port is below 1024 and warn the user
+  if [[ $port -lt 1024 ]]; then
+      echo "Warning: Ports below 1024 require root privileges."
+      echo "Please run this script with 'sudo' if you intend to use port $port."
+      exit 1
+  fi
+
+  # Start the HTTP server
+  ip=$(curl ifconfig.me/ip)
+  echo "Serving HTTP on http://$ip:$port from directory [$directory]"
+  python3 -m http.server --bind 0.0.0.0 --directory "$directory" "$port"
 }
 # ==============================================================================
 # Grep text and replace it
@@ -415,65 +514,6 @@ find_and_rename() {
     done
 }
 # ==============================================================================
-# http-server - Quickly spin up a simple HTTP server for a directory.
-#
-# This is basically just a simple wrapper script for python's http.server;
-# https://docs.python.org/3/library/http.server.html
-# ==============================================================================
-httphere(){
-
-  script="$(basename "$0")"
-
-  # Function to display help
-  display_help() {
-      echo "$script - Quickly spin up a simple HTTP server for a directory."
-      echo "Usage: $script [arguments]"
-      echo
-      echo "  -h/--help - Print help and exit."
-      echo "  -p/--port - Set the port number to bind to (defaults to 10337)."
-      echo "  -d/--directory - Set the root directory to serve from (defaults to current)."
-      exit 0
-  }
-
-  # Parse arguments
-  while [[ $# -gt 0 ]]; do
-      case "$1" in
-          -h|--help)
-              display_help
-              ;;
-          -p|--port)
-              port="$2"
-              shift
-              ;;
-          -d|--directory)
-              directory="$2"
-              shift
-              ;;
-          *)
-              echo "Unknown option: $1"
-              display_help
-              ;;
-      esac
-      shift
-  done
-
-  # Set default values
-  port=${port:-10337}
-  directory=${directory:-$(pwd)}
-
-  # Check if the port is below 1024 and warn the user
-  if [[ $port -lt 1024 ]]; then
-      echo "Warning: Ports below 1024 require root privileges."
-      echo "Please run this script with 'sudo' if you intend to use port $port."
-      exit 1
-  fi
-
-  # Start the HTTP server
-  ip=$(curl ifconfig.me/ip)
-  echo "Serving HTTP on http://$ip:$port from directory [$directory]"
-  python3 -m http.server --bind 0.0.0.0 --directory "$directory" "$port"
-}
-# ==============================================================================
 # Find the n most recently modified files in a given directory
 # ==============================================================================
 recently() {
@@ -543,22 +583,6 @@ recently() {
     echo "$output" | head -n "$limit"
 }
 # ==============================================================================
-# TMUX
-# ==============================================================================
-source ~/.tmux-bash-autocompletion
-# ------------------------------------------------------------------------------
-tmux_killserver(){
-  tmux kill-server
-}
-# ==============================================================================
-# ls after cd: my absolute favorite
-cd() { builtin cd "$@" && ls; }
-cp() { rsync -ah --progress --info=progress2 "$@"; }
-# ------------------------------------------------------------------------------
-echo "----------------------------"
-date
-echo "----------------------------"
-# ==============================================================================
 # DOCKER
 # ==============================================================================
 docker_clean(){
@@ -605,20 +629,6 @@ docker_killall(){
   fi
 }
 # ------------------------------------------------------------------------------
-docker_volumes_remove(){
-  # https://stackoverflow.com/a/40654726/5297684
-  docker volume rm $(docker volume ls -qf dangling=true)
-}
-# ------------------------------------------------------------------------------
-docker_kill(){
-  if [ -v "$1" ] # argument exists?
-  then
-    docker container kill $1 > /dev/null
-    docker container rm  $1
-    echo "Killed and removed container $1"
-  fi
-}
-# ------------------------------------------------------------------------------
 docker_ls(){
 
   # are any containers currently running?
@@ -630,8 +640,13 @@ docker_ls(){
   fi
 }
 # ------------------------------------------------------------------------------
+docker_volumes_remove(){
+  # https://stackoverflow.com/a/40654726/5297684
+  docker volume rm $(docker volume ls -qf dangling=true)
+}
 # ==============================================================================
-
+# ==============================================================================
+# ==============================================================================
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # This function should reside at the end of this file (.bashrc)
 # Automatically add completion for all aliases to commands having completion functions
