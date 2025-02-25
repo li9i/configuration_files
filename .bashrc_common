@@ -245,7 +245,7 @@ git-multistatus(){
 
 
     # Print the repository name in the appropriate color
-    echo -e "——————————————————————————————————————————————————————————————————————————————\e[0m"
+    #echo -e "——————————————————————————————————————————————————————————————————————————————\e[0m"
     #echo -ne "${color}${repo_name}\e[0m"
     printf "${color}%-${max_width}s\e[0m" "$repo_name"
 
