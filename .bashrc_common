@@ -335,8 +335,7 @@ greprep() {
     local search_pattern="$1"
     local replacement_text="$2"
 
-    # Use grep to find files containing the search pattern and pass them to sed for replacement
-    grep -rlF "$search_pattern" . | xargs sed -i "s|${search_pattern}|${replacement_text}|g"
+    grep -rlF --exclude-dir=.git "$search_pattern" . | xargs sed -i "s|${search_pattern}|${replacement_text}|g"
 }
 # ==============================================================================
 # http-server - Quickly spin up a simple HTTP server for a directory.
