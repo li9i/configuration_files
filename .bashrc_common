@@ -325,17 +325,94 @@ git-is-local-synced-with-remote() {
 }
 # ==============================================================================
 # Grep text and replace it
+# Usage: replace_text [--dry-run] <search_pattern> <replacement_text>
 # ==============================================================================
-greprep() {
-    if [ $# -ne 2 ]; then
-        echo "Usage: greprep <search_pattern> <replacement_text>"
+grep_and_replace() {
+    local dry_run=0
+    local args=()
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run)
+                dry_run=1
+                shift
+                ;;
+            *)
+                args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    if [ ${#args[@]} -ne 2 ]; then
+        echo "Usage: replace_text [--dry-run] <search_pattern> <replacement_text>"
         return 1
     fi
 
-    local search_pattern="$1"
-    local replacement_text="$2"
+    local search_pattern="${args[0]}"
+    local replacement_text="${args[1]}"
 
-    grep -rlF --exclude-dir=.git "$search_pattern" . | xargs sed -i "s|${search_pattern}|${replacement_text}|g"
+    # Use grep to find files containing the search pattern, excluding sensitive directories
+    grep -rlF --exclude-dir=.git --exclude-dir=.svn --exclude-dir=.hg "$search_pattern" . | while read -r file; do
+        if [ $dry_run -eq 1 ]; then
+            echo "Dry run: Would replace '$search_pattern' with '$replacement_text' in '$file'"
+        else
+            sed -i "s|${search_pattern}|${replacement_text}|g" "$file"
+            echo "Replaced '$search_pattern' with '$replacement_text' in '$file'"
+        fi
+    done
+}
+# ==============================================================================
+# Find files with a certain name and rename them
+# Usage: find_and_rename [--dry-run] <search_pattern> <new_name> [exclude_dirs...]
+# ==============================================================================
+find_and_rename() {
+    local dry_run=0
+    local args=()
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --dry-run)
+                dry_run=1
+                shift
+                ;;
+            *)
+                args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    if [ ${#args[@]} -lt 2 ]; then
+        echo "Usage: find_and_rename [--dry-run] <search_pattern> <new_name> [exclude_dirs...]"
+        return 1
+    fi
+
+    local search_pattern="${args[0]}"
+    local new_name="${args[1]}"
+    shift 2
+
+    # Build the exclude path options for find
+    local exclude_paths=()
+    for dir in "${args[@]}"; do
+        exclude_paths+=("-not" "-path" "*$dir/*")
+    done
+
+    # Use find to locate files matching the pattern, excluding specified directories
+    find . -type f "${exclude_paths[@]}" -name "*$search_pattern*" | while read -r file; do
+        local dir=$(dirname "$file")
+        local base=$(basename "$file")
+        local new_base="${base//$search_pattern/$new_name}"
+
+        if [ $dry_run -eq 1 ]; then
+            echo "Dry run: Would rename '$file' to '$dir/$new_base'"
+        else
+            mv "$file" "$dir/$new_base"
+            echo "Renamed '$file' to '$dir/$new_base'"
+        fi
+    done
 }
 # ==============================================================================
 # http-server - Quickly spin up a simple HTTP server for a directory.
