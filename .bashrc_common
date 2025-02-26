@@ -364,11 +364,76 @@ tmux_killserver(){
   tmux kill-server
 }
 # ==============================================================================
+# DOCKER
+# ==============================================================================
+docker_clean(){
+
+  # are any containers currently up?
+  num_containers=$(docker container ls | wc -l)
+
+  if [ $num_containers -gt 1 ]
+  then
+    echo "There are containers running, and I cannot remove them without killing them first. I will now just prune dangling images."
+  else
+    running_containers=$(docker ps -aq)
+
+    if [ ! -z "$running_containers" ]
+    then
+      docker container stop $running_containers
+      docker container rm  $running_containers
+    fi
+  fi
+
+  # I don't want to enter `y` every time I call this function ([y/N])
+  yes | docker image prune
+}
+# ------------------------------------------------------------------------------
+docker_cleanall(){
+
+  # I don't want to enter `y` every time I call this function ([y/N])
+  yes | docker system prune
+}
+# ------------------------------------------------------------------------------
+docker_killall(){
+
+  # are any containers currently running?
+  num_containers=$(docker ps -aq | wc -l)
+
+  if [ $num_containers -gt 0 ]
+  then
+    running_containers=$(docker ps -aq)
+    docker container kill $running_containers
+    docker container rm  $running_containers
+    echo "Killed running containers"
+  else
+    echo "No containers are running"
+  fi
+}
+# ------------------------------------------------------------------------------
+docker_ls(){
+
+  # are any containers currently running?
+  num_containers=$(docker ps -a | wc -l)
+
+  if [ $num_containers -gt 1 ]
+  then
+    docker ps -q | xargs -n1 docker inspect --format '{{.Name}}'
+  fi
+}
+# ------------------------------------------------------------------------------
+docker_volumes_remove(){
+  # https://stackoverflow.com/a/40654726/5297684
+  docker volume rm $(docker volume ls -qf dangling=true)
+}
+# ==============================================================================
+# VARIOUS
+# ==============================================================================
+# ------------------------------------------------------------------------------
 # http-server - Quickly spin up a simple HTTP server for a directory.
 #
 # This is basically just a simple wrapper script for python's http.server;
 # https://docs.python.org/3/library/http.server.html
-# ==============================================================================
+# ------------------------------------------------------------------------------
 httphere(){
 
   script="$(basename "$0")"
@@ -422,10 +487,10 @@ httphere(){
   echo "Serving HTTP on http://$ip:$port from directory [$directory]"
   python3 -m http.server --bind 0.0.0.0 --directory "$directory" "$port"
 }
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # Grep text and replace it
 # Usage: replace_text [--dry-run] <search_pattern> <replacement_text>
-# ==============================================================================
+# ------------------------------------------------------------------------------
 grep_and_replace() {
     local dry_run=0
     local args=()
@@ -462,10 +527,10 @@ grep_and_replace() {
         fi
     done
 }
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # Find files with a certain name and rename them
 # Usage: find_and_rename [--dry-run] <search_pattern> <new_name> [exclude_dirs...]
-# ==============================================================================
+# ------------------------------------------------------------------------------
 find_and_rename() {
     local dry_run=0
     local args=()
@@ -513,9 +578,9 @@ find_and_rename() {
         fi
     done
 }
-# ==============================================================================
+# ------------------------------------------------------------------------------
 # Find the n most recently modified files in a given directory
-# ==============================================================================
+# ------------------------------------------------------------------------------
 recently() {
     local script="recently"
     local dir="${1:-$PWD}"  # Default to current directory
@@ -583,72 +648,13 @@ recently() {
     echo "$output" | head -n "$limit"
 }
 # ==============================================================================
-# DOCKER
-# ==============================================================================
-docker_clean(){
-
-  # are any containers currently up?
-  num_containers=$(docker container ls | wc -l)
-
-  if [ $num_containers -gt 1 ]
-  then
-    echo "There are containers running, and I cannot remove them without killing them first. I will now just prune dangling images."
-  else
-    running_containers=$(docker ps -aq)
-
-    if [ ! -z "$running_containers" ]
-    then
-      docker container stop $running_containers
-      docker container rm  $running_containers
-    fi
-  fi
-
-  # I don't want to enter `y` every time I call this function ([y/N])
-  yes | docker image prune
-}
-# ------------------------------------------------------------------------------
-docker_cleanall(){
-
-  # I don't want to enter `y` every time I call this function ([y/N])
-  yes | docker system prune
-}
-# ------------------------------------------------------------------------------
-docker_killall(){
-
-  # are any containers currently running?
-  num_containers=$(docker ps -aq | wc -l)
-
-  if [ $num_containers -gt 0 ]
-  then
-    running_containers=$(docker ps -aq)
-    docker container kill $running_containers
-    docker container rm  $running_containers
-    echo "Killed running containers"
-  else
-    echo "No containers are running"
-  fi
-}
-# ------------------------------------------------------------------------------
-docker_ls(){
-
-  # are any containers currently running?
-  num_containers=$(docker ps -a | wc -l)
-
-  if [ $num_containers -gt 1 ]
-  then
-    docker ps -q | xargs -n1 docker inspect --format '{{.Name}}'
-  fi
-}
-# ------------------------------------------------------------------------------
-docker_volumes_remove(){
-  # https://stackoverflow.com/a/40654726/5297684
-  docker volume rm $(docker volume ls -qf dangling=true)
-}
-# ==============================================================================
-# ==============================================================================
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 # ==============================================================================
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# This function should reside at the end of this file (.bashrc)
+# ==============================================================================
+# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# ==============================================================================
+# This function should reside at the end of this file
 # Automatically add completion for all aliases to commands having completion functions
 # Source: https://superuser.com/a/437508/1236116
 function alias_completion {
