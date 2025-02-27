@@ -9,6 +9,7 @@
 # -- git-tree()
 # -- git-multistatus()
 # -- git-is-local-synced-with-remote()
+# -- git-multistatus-changed()
 # - TMUX
 # - VARIOUS
 # -- httphere()
@@ -201,89 +202,69 @@ PS1=$PS1"\n\[\033[0m\]"
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
 git-multistatus(){
-  # Directory containing your Git repositories
-  branch_to_check="$1"
+  # Parse arguments
+  branch_to_check="main"
+  show_status=false
 
-  if [[ -z "$branch_to_check" ]]; then
-    branch_to_check="main"
-  fi
+  for arg in "$@"; do
+    case "$arg" in
+      --show) show_status=true ;;
+      *) branch_to_check="$arg" ;;
+    esac
+  done
 
   # Use the current directory
   REPO_DIR="."
 
   # ----------------------------------------------------------------------------
   # Determine the maximum length of repository name
-  # Initialize the maximum width
   max_width=0
 
-  # First loop: Find the maximum width of repository names
   for repo in "$REPO_DIR"/*/; do
-    # Exit if it's not a git repo
     if [ ! -d "$repo/.git" ]; then
       continue
     fi
-
-    # Remove the trailing slash from the directory name
-    repo=${repo%/}
-
-    # Get the base name of the repository (without the full path)
-    repo_name=$(basename "$repo")
-
-    # Update the maximum width if this repository name is longer
-    if [[ ${#repo_name} -gt $max_width ]]; then
-      max_width=${#repo_name}
-    fi
+    repo_name=$(basename "${repo%/}")
+    (( ${#repo_name} > max_width )) && max_width=${#repo_name}
   done
 
-  # Add some padding to the maximum width (e.g., 2 extra spaces)
   max_width=$((max_width + 2))
   # ----------------------------------------------------------------------------
 
-  # Iterate over each directory in the REPO_DIR
   for repo in "$REPO_DIR"/*/; do
-
-    # Exit if it's not a git repo
     if [ ! -d "$repo/.git" ]; then
       continue
     fi
 
-    # Remove the trailing slash from the directory name
-    repo=${repo%/}
-
-    # Get the base name of the repository (without the full path)
-    repo_name=$(basename "$repo")
-
-    # Check the Git status using the -C flag to avoid changing directories
+    repo_name=$(basename "${repo%/}")
     status=$(git -C "$repo" status --porcelain 2>/dev/null)
 
-    # Determine the color based on the status
-    if [[ -n $(echo "$status" | grep '^M') ]]; then
-      # Changes staged (red)
-      color="\e[31m"
+    if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
+      color="\e[31m"  # Red for changes
       check_sync=1
-    elif [[ -n $(echo "$status" | grep '^ M') ]]; then
-      # Changes not staged (red)
-      color="\e[31m"
-      check_sync=1
+      show_status_flag=true
     elif [[ -z "$status" ]]; then
-      # Clean (green)
-      color="\e[32m"
+      color="\e[32m"  # Green for clean
       check_sync=1
+      show_status_flag=false
     else
-      # Unknown status (red)
-      color="\e[31m"
+      color="\e[31m"  # Red for unknown status
       check_sync=1
+      show_status_flag=true
     fi
 
-
-    # Print the repository name in the appropriate color
-    #echo -e "——————————————————————————————————————————————————————————————————————————————\e[0m"
-    #echo -ne "${color}${repo_name}\e[0m"
     printf "${color}%-${max_width}s\e[0m" "$repo_name"
 
-    # Check if the repository's HEAD matches origin/HEAD
     if [ "$check_sync" -eq 1 ]; then
-      git-is-local-synced-with-remote $branch_to_check $repo
+      git-is-local-synced-with-remote "$branch_to_check" "$repo"
+    fi
+
+    # Show git status if --show is passed, except for clean repos
+    if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
+      echo -e "\n-------------------------------------"
+      echo "Git status for: $repo_name"
+      git -C "$repo" status
+      echo "-------------------------------------"
     fi
   done
 }
@@ -364,76 +345,11 @@ tmux_killserver(){
   tmux kill-server
 }
 # ==============================================================================
-# DOCKER
-# ==============================================================================
-docker_clean(){
-
-  # are any containers currently up?
-  num_containers=$(docker container ls | wc -l)
-
-  if [ $num_containers -gt 1 ]
-  then
-    echo "There are containers running, and I cannot remove them without killing them first. I will now just prune dangling images."
-  else
-    running_containers=$(docker ps -aq)
-
-    if [ ! -z "$running_containers" ]
-    then
-      docker container stop $running_containers
-      docker container rm  $running_containers
-    fi
-  fi
-
-  # I don't want to enter `y` every time I call this function ([y/N])
-  yes | docker image prune
-}
-# ------------------------------------------------------------------------------
-docker_cleanall(){
-
-  # I don't want to enter `y` every time I call this function ([y/N])
-  yes | docker system prune
-}
-# ------------------------------------------------------------------------------
-docker_killall(){
-
-  # are any containers currently running?
-  num_containers=$(docker ps -aq | wc -l)
-
-  if [ $num_containers -gt 0 ]
-  then
-    running_containers=$(docker ps -aq)
-    docker container kill $running_containers
-    docker container rm  $running_containers
-    echo "Killed running containers"
-  else
-    echo "No containers are running"
-  fi
-}
-# ------------------------------------------------------------------------------
-docker_ls(){
-
-  # are any containers currently running?
-  num_containers=$(docker ps -a | wc -l)
-
-  if [ $num_containers -gt 1 ]
-  then
-    docker ps -q | xargs -n1 docker inspect --format '{{.Name}}'
-  fi
-}
-# ------------------------------------------------------------------------------
-docker_volumes_remove(){
-  # https://stackoverflow.com/a/40654726/5297684
-  docker volume rm $(docker volume ls -qf dangling=true)
-}
-# ==============================================================================
-# VARIOUS
-# ==============================================================================
-# ------------------------------------------------------------------------------
 # http-server - Quickly spin up a simple HTTP server for a directory.
 #
 # This is basically just a simple wrapper script for python's http.server;
 # https://docs.python.org/3/library/http.server.html
-# ------------------------------------------------------------------------------
+# ==============================================================================
 httphere(){
 
   script="$(basename "$0")"
@@ -487,10 +403,10 @@ httphere(){
   echo "Serving HTTP on http://$ip:$port from directory [$directory]"
   python3 -m http.server --bind 0.0.0.0 --directory "$directory" "$port"
 }
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Grep text and replace it
 # Usage: replace_text [--dry-run] <search_pattern> <replacement_text>
-# ------------------------------------------------------------------------------
+# ==============================================================================
 grep_and_replace() {
     local dry_run=0
     local args=()
@@ -527,10 +443,10 @@ grep_and_replace() {
         fi
     done
 }
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Find files with a certain name and rename them
 # Usage: find_and_rename [--dry-run] <search_pattern> <new_name> [exclude_dirs...]
-# ------------------------------------------------------------------------------
+# ==============================================================================
 find_and_rename() {
     local dry_run=0
     local args=()
@@ -578,9 +494,9 @@ find_and_rename() {
         fi
     done
 }
-# ------------------------------------------------------------------------------
+# ==============================================================================
 # Find the n most recently modified files in a given directory
-# ------------------------------------------------------------------------------
+# ==============================================================================
 recently() {
     local script="recently"
     local dir="${1:-$PWD}"  # Default to current directory
@@ -648,13 +564,72 @@ recently() {
     echo "$output" | head -n "$limit"
 }
 # ==============================================================================
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# DOCKER
+# ==============================================================================
+docker_clean(){
+
+  # are any containers currently up?
+  num_containers=$(docker container ls | wc -l)
+
+  if [ $num_containers -gt 1 ]
+  then
+    echo "There are containers running, and I cannot remove them without killing them first. I will now just prune dangling images."
+  else
+    running_containers=$(docker ps -aq)
+
+    if [ ! -z "$running_containers" ]
+    then
+      docker container stop $running_containers
+      docker container rm  $running_containers
+    fi
+  fi
+
+  # I don't want to enter `y` every time I call this function ([y/N])
+  yes | docker image prune
+}
+# ------------------------------------------------------------------------------
+docker_cleanall(){
+
+  # I don't want to enter `y` every time I call this function ([y/N])
+  yes | docker system prune
+}
+# ------------------------------------------------------------------------------
+docker_killall(){
+
+  # are any containers currently running?
+  num_containers=$(docker ps -aq | wc -l)
+
+  if [ $num_containers -gt 0 ]
+  then
+    running_containers=$(docker ps -aq)
+    docker container kill $running_containers
+    docker container rm  $running_containers
+    echo "Killed running containers"
+  else
+    echo "No containers are running"
+  fi
+}
+# ------------------------------------------------------------------------------
+docker_ls(){
+
+  # are any containers currently running?
+  num_containers=$(docker ps -a | wc -l)
+
+  if [ $num_containers -gt 1 ]
+  then
+    docker ps -q | xargs -n1 docker inspect --format '{{.Name}}'
+  fi
+}
+# ------------------------------------------------------------------------------
+docker_volumes_remove(){
+  # https://stackoverflow.com/a/40654726/5297684
+  docker volume rm $(docker volume ls -qf dangling=true)
+}
+# ==============================================================================
+# ==============================================================================
 # ==============================================================================
 # ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# ==============================================================================
-# ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-# ==============================================================================
-# This function should reside at the end of this file
+# This function should reside at the end of this file (.bashrc)
 # Automatically add completion for all aliases to commands having completion functions
 # Source: https://superuser.com/a/437508/1236116
 function alias_completion {
