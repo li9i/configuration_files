@@ -201,6 +201,9 @@ PS1=$PS1"\n\[\033[0m\]"
 # ------------------------------------------------------------------------------
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
+# Execute `git status` for multiple repositories under a single directory.
+# Usage: git-multistatus [<branch-name>:main] [--show]
+# ------------------------------------------------------------------------------
 git-multistatus(){
   # Parse arguments
   branch_to_check="main"
