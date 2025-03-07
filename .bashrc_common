@@ -9,7 +9,6 @@
 # -- git-tree()
 # -- git-multistatus()
 # -- git-is-local-synced-with-remote()
-# -- git-multistatus-changed()
 # - TMUX
 # - VARIOUS
 # -- httphere()
@@ -215,6 +214,13 @@ git-multistatus(){
       *) branch_to_check="$arg" ;;
     esac
   done
+
+  if [ "$show_status" = false ]; then
+    echo "Checking branch $branch_to_check. Use --show to show individual changes"
+  else
+    echo "Checking branch $branch_to_check"
+  fi
+  echo "---"
 
   # Use the current directory
   REPO_DIR="."
