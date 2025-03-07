@@ -270,7 +270,7 @@ git-multistatus(){
 
     # Show git status if --show is passed, except for clean repos
     if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
-      echo "—————————————————————————————————————————————————————————————————————————————"
+      echo "-----------------------------------------------------------------------------"
       echo "Git status for: $repo_name"
       git -C "$repo" status
       echo "—————————————————————————————————————————————————————————————————————————————"
