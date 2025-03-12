@@ -202,81 +202,96 @@ PS1=$PS1"\n\[\033[0m\]"
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
 # Execute `git status` for multiple repositories under a single directory.
-# Usage: git-multistatus [<branch-name>:main] [--show]
+# Usage: git-multistatus [--branch <value>] [--show]
 # ------------------------------------------------------------------------------
 git-multistatus(){
-  # Parse arguments
-  branch_to_check="main"
-  show_status=false
 
-  for arg in "$@"; do
-    case "$arg" in
-      --show) show_status=true ;;
-      *) branch_to_check="$arg" ;;
-    esac
-  done
+    # Default branch
+    branch_to_check="main";
+    show_status=false;
 
-  if [ "$show_status" = false ]; then
-    echo "Checking branch $branch_to_check. Use --show to show individual changes"
-  else
-    echo "Checking branch $branch_to_check"
-  fi
-  echo "---"
+    # Argument parsing
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --show)
+                show_status=true
+                shift
+                ;;
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
 
-  # Use the current directory
-  REPO_DIR="."
-
-  # ----------------------------------------------------------------------------
-  # Determine the maximum length of repository name
-  max_width=0
-
-  for repo in "$REPO_DIR"/*/; do
-    if [ ! -d "$repo/.git" ]; then
-      continue
-    fi
-    repo_name=$(basename "${repo%/}")
-    (( ${#repo_name} > max_width )) && max_width=${#repo_name}
-  done
-
-  max_width=$((max_width + 2))
-  # ----------------------------------------------------------------------------
-
-  for repo in "$REPO_DIR"/*/; do
-    if [ ! -d "$repo/.git" ]; then
-      continue
-    fi
-
-    repo_name=$(basename "${repo%/}")
-    status=$(git -C "$repo" status --porcelain 2>/dev/null)
-
-    if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
-      color="\e[31m"  # Red for changes
-      check_sync=1
-      show_status_flag=true
-    elif [[ -z "$status" ]]; then
-      color="\e[32m"  # Green for clean
-      check_sync=1
-      show_status_flag=false
+    if [ "$show_status" = false ]; then
+        echo "Checking branch $branch_to_check. Use --show to show individual changes";
     else
-      color="\e[31m"  # Red for unknown status
-      check_sync=1
-      show_status_flag=true
-    fi
+        echo "Checking branch $branch_to_check";
+    fi;
 
-    printf "${color}%-${max_width}s\e[0m" "$repo_name"
+    echo "---";
 
-    if [ "$check_sync" -eq 1 ]; then
-      git-is-local-synced-with-remote "$branch_to_check" "$repo"
-    fi
+    REPO_DIR=".";
+    max_width=0;
 
-    # Show git status if --show is passed, except for clean repos
-    if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
-      echo "-----------------------------------------------------------------------------"
-      echo "Git status for: $repo_name"
-      git -C "$repo" status
-      echo "—————————————————————————————————————————————————————————————————————————————"
-    fi
-  done
+    # Find the maximum width of repository names for formatting
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        (( ${#repo_name} > max_width )) && max_width=${#repo_name};
+    done;
+
+    max_width=$((max_width + 2));
+
+    # Check each repository
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        status=$(git -C "$repo" status --porcelain 2>/dev/null);
+
+        if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
+            color="\e[31m";
+            check_sync=1;
+            show_status_flag=true;
+        else
+            if [[ -z "$status" ]]; then
+                color="\e[32m";
+                check_sync=1;
+                show_status_flag=false;
+            else
+                color="\e[31m";
+                check_sync=1;
+                show_status_flag=true;
+            fi;
+        fi;
+
+        printf "${color}%-${max_width}s\e[0m" "$repo_name";
+
+        if [ "$check_sync" -eq 1 ]; then
+            git-is-local-synced-with-remote "$branch_to_check" "$repo";
+        fi;
+
+        if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
+            echo "-----------------------------------------------------------------------------";
+            echo "Git status for: $repo_name";
+            git -C "$repo" status;
+            echo "—————————————————————————————————————————————————————————————————————————————";
+        fi;
+    done
 }
 # ------------------------------------------------------------------------------
 git-is-local-synced-with-remote() {
