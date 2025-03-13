@@ -8,6 +8,7 @@
 # -- git prompt (PS1)
 # -- git-tree()
 # -- git-multistatus()
+# -- git-multirebase()
 # -- git-is-local-synced-with-remote()
 # - TMUX
 # - VARIOUS
@@ -360,6 +361,58 @@ git-is-local-synced-with-remote() {
     #echo "Remote SHA: $remote_sha"
     return 1  # Return 1 for failure (not aligned)
   fi
+}
+# ------------------------------------------------------------------------------
+# Execute `git rebase origin/<branch>` for multiple repositories under a single directory.
+# Usage: git-multirebase [--branch <value>]
+# ------------------------------------------------------------------------------
+git-multirebase () 
+{ 
+    branch_to_rebase="main";
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --branch)
+                branch_to_rebase="$2";
+                shift 2;
+                ;;
+            *)
+                echo "Unknown argument: $1";
+                exit 1;
+                ;;
+        esac
+    done;
+    
+    echo "Rebasing branch $branch_to_rebase in all repositories";
+    echo "---";
+    REPO_DIR=".";
+    max_width=0;
+    for repo in "$REPO_DIR"/*/;
+    do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        (( ${#repo_name} > max_width )) && max_width=${#repo_name};
+    done;
+    max_width=$((max_width + 2));
+    for repo in "$REPO_DIR"/*/;
+    do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        output=$(git -C "$repo" fetch origin 2>&1 && git -C "$repo" rebase "origin/$branch_to_rebase" 2>&1)
+        rebase_status=$?
+        
+        if [ $rebase_status -ne 0 ]; then
+            color="\e[31m" # Red for failure
+        else
+            color="\e[32m" # Green for success
+        fi;
+        
+        printf "${color}%-${max_width}s\e[0m %s\n" "$repo_name" "$output"
+        echo "------------------------------------------------------------"
+    done;
 }
 # ==============================================================================
 # TMUX
