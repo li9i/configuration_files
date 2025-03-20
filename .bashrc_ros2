@@ -103,6 +103,6 @@ function colcon_clean(){
   cd $dir;
 }
 
-if [ -f ~/.bashrc_common ]; then
-    . ~/.bashrc_common
+if [ -f ~/.bashrc_li9i ]; then
+    . ~/.bashrc_li9i
 fi
