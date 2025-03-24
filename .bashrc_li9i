@@ -23,6 +23,8 @@
 # -- docker_killall()
 # -- docker_ls()
 # -- docker_volumes_remove()
+# -- get_local_digest()
+# -- get_remote_digest()
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # ==============================================================================
 # If not running interactively, don't do anything
@@ -817,6 +819,18 @@ docker_ls(){
 docker_volumes_remove(){
   # https://stackoverflow.com/a/40654726/5297684
   docker volume rm $(docker volume ls -qf dangling=true)
+}
+# ------------------------------------------------------------------------------
+# Function to get the local digest
+get_local_digest() {
+  local image=$1
+  docker inspect --format='{{.Id}}' "$image" 2>/dev/null
+}
+# ------------------------------------------------------------------------------
+# Function to get the remote digest
+get_remote_digest() {
+  local image=$1
+  docker manifest inspect "$image" 2>/dev/null | grep -m 1 '"digest":' | awk -F '"' '{print $4}'
 }
 # ==============================================================================
 # ==============================================================================
