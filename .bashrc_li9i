@@ -368,8 +368,8 @@ git-is-local-synced-with-remote() {
 # Execute `git rebase origin/<branch>` for multiple repositories under a single directory.
 # Usage: git-multirebase [--branch <value>]
 # ------------------------------------------------------------------------------
-git-multirebase () 
-{ 
+git-multirebase ()
+{
     branch_to_rebase="main";
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -383,7 +383,7 @@ git-multirebase ()
                 ;;
         esac
     done;
-    
+
     echo "Rebasing branch $branch_to_rebase in all repositories";
     echo "---";
     REPO_DIR=".";
@@ -405,13 +405,13 @@ git-multirebase ()
         repo_name=$(basename "${repo%/}");
         output=$(git -C "$repo" fetch origin 2>&1 && git -C "$repo" rebase "origin/$branch_to_rebase" 2>&1)
         rebase_status=$?
-        
+
         if [ $rebase_status -ne 0 ]; then
             color="\e[31m" # Red for failure
         else
             color="\e[32m" # Green for success
         fi;
-        
+
         printf "${color}%-${max_width}s\e[0m %s\n" "$repo_name" "$output"
     done;
 }
@@ -483,11 +483,11 @@ httphere0(){
   python3 -m http.server --bind 0.0.0.0 --directory "$directory" "$port"
 }
 # ------------------------------------------------------------------------------
-httphere1() 
-{ 
+httphere1()
+{
     script="$(basename "$0")";
-    function display_help () 
-    { 
+    function display_help ()
+    {
         echo "$script - Quickly spin up a simple HTTP server for a directory.";
         echo "Usage: $script [arguments]";
         echo;
@@ -497,7 +497,7 @@ httphere1()
         exit 0
     };
     while [[ $# -gt 0 ]]; do
-        case "$1" in 
+        case "$1" in
             -h | --help)
                 display_help
             ;;
@@ -819,18 +819,6 @@ docker_ls(){
 docker_volumes_remove(){
   # https://stackoverflow.com/a/40654726/5297684
   docker volume rm $(docker volume ls -qf dangling=true)
-}
-# ------------------------------------------------------------------------------
-# Function to get the local digest
-get_local_digest() {
-  local image=$1
-  docker inspect --format='{{.Id}}' "$image" 2>/dev/null
-}
-# ------------------------------------------------------------------------------
-# Function to get the remote digest
-get_remote_digest() {
-  local image=$1
-  docker manifest inspect "$image" 2>/dev/null | grep -m 1 '"digest":' | awk -F '"' '{print $4}'
 }
 # ==============================================================================
 # ==============================================================================
