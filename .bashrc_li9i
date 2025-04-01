@@ -67,7 +67,7 @@ fi
 # ==============================================================================
 # Set up fzf key bindings and fuzzy completion
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-export FZF_DEFAULT_OPTS="--preview 'cat {}'"
+#export FZF_DEFAULT_OPTS="--preview 'cat {}'"
 # ==============================================================================
 # PROMPT
 # ==============================================================================
