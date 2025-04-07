@@ -119,8 +119,8 @@ if has("gui_running")
    set guioptions-=T
    "Terminus is AWESOME
    "set guifont=Terminus\ 9
-else
-   colorscheme desert256
+"else
+   "colorscheme desert256
 endif
 
 "Status line gnarliness
