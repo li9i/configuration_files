@@ -114,14 +114,12 @@ highlight MatchParen ctermbg=4
 
 " Favorite Color Scheme
 if has("gui_running")
-   colorscheme nuvola
    " Remove Toolbar
    set guioptions-=T
-   "Terminus is AWESOME
-   "set guifont=Terminus\ 9
-"else
-   "colorscheme desert256
+else
+   set termguicolors
 endif
+colorscheme nuvola
 
 "Status line gnarliness
 set laststatus=2
