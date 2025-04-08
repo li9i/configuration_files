@@ -428,6 +428,11 @@ tmux_killserver(){
   tmux kill-server
 }
 # ==============================================================================
+# colcon
+# ==============================================================================
+export CXX=clang++
+export CC=clang
+# ==============================================================================
 # http-server - Quickly spin up a simple HTTP server for a directory.
 #
 # This is basically just a simple wrapper script for python's http.server;
