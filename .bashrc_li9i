@@ -136,7 +136,7 @@ cd() { builtin cd "$@" && ls; }
 cp() { rsync -ah --progress --info=progress2 "$@"; }
 # ------------------------------------------------------------------------------
 # get unix timestamp updated in real time
-alias unix_timestamp="watch -n 1 date +%s"
+alias unix_timer="watch -n 1 date +%s"
 # ==============================================================================
 # COMPLETION
 # ==============================================================================
