@@ -134,6 +134,9 @@ alias l='ls -CF'
 # ls after cd: my absolute favorite
 cd() { builtin cd "$@" && ls; }
 cp() { rsync -ah --progress --info=progress2 "$@"; }
+# ------------------------------------------------------------------------------
+# get unix timestamp updated in real time
+alias unix_timestamp="watch -n 1 date +%s"
 # ==============================================================================
 # COMPLETION
 # ==============================================================================
