@@ -137,6 +137,17 @@ cp() { rsync -ah --progress --info=progress2 "$@"; }
 # ------------------------------------------------------------------------------
 # get unix timestamp updated in real time
 alias unix_timer="watch -n 1 date +%s"
+# ------------------------------------------------------------------------------
+#  --du       For each directory report its size as the accumulation of sizes of all
+#             its files and sub-directories (and their files, and so on).
+# -h          Print the size of each file but in a more human readable way
+# -F          Append a `/' for directories, a `=' for socket files, a `*' for executable files
+# -r          Sort the output in reverse order
+# -c          Sort the output by last status change instead of alphabetically
+# --dirsfirst List directories before files
+# --metafirst Print the meta-data information at the beginning of the line rather
+#             than after the indentation lines.
+alias tree="tree --du -h -F -rc --dirsfirst --metafirst"
 # ==============================================================================
 # COMPLETION
 # ==============================================================================
