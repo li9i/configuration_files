@@ -220,7 +220,7 @@ if [ $? -eq 0 ]; then \
 fi)';
 PS1=$PS1"\n\[\033[0m\]"
 # ------------------------------------------------------------------------------
-alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
+alias gittree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
 # Execute `git status` for multiple repositories under a single directory.
 # Usage: git-multistatus [--branch <value>] [--show]
