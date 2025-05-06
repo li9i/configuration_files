@@ -135,7 +135,9 @@ alias l='ls -CF'
 cd() { builtin cd "$@" && ls; }
 cp() { rsync -ah --progress --info=progress2 "$@"; }
 # ------------------------------------------------------------------------------
-# get unix timestamp updated in real time
+# Get the unix timestamp of now with nanosec resolution
+alias unix_timestamp="date +'%s.%N'"
+# Get unix timestamp updated in real time (sec resolution)
 alias unix_timer="watch -n 1 date +%s"
 # ------------------------------------------------------------------------------
 #  --du       For each directory report its size as the accumulation of sizes of all
