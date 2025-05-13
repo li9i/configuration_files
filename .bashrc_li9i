@@ -17,14 +17,14 @@
 # -- grep_and_replace()
 # -- find_and_rename()
 # -- recently()
+# -- function_info()
 # - DOCKER
 # -- docker_clean()
 # -- docker_cleanall()
 # -- docker_killall()
 # -- docker_ls()
 # -- docker_volumes_remove()
-# -- get_local_digest()
-# -- get_remote_digest()
+# -- docker_reboot()
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # ==============================================================================
 # If not running interactively, don't do anything
