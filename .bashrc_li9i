@@ -856,6 +856,9 @@ docker_volumes_remove(){
   # https://stackoverflow.com/a/40654726/5297684
   docker volume rm $(docker volume ls -qf dangling=true)
 }
+docker_reboot(){
+  sudo systemctl daemon-reload && sudo systemctl restart docker
+}
 # ==============================================================================
 # ==============================================================================
 # ==============================================================================
