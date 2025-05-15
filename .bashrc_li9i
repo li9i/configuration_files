@@ -22,6 +22,7 @@
 # -- docker_clean()
 # -- docker_cleanall()
 # -- docker_killall()
+# -- docker_killall_robetarme()
 # -- docker_ls()
 # -- docker_volumes_remove()
 # -- docker_reboot()
@@ -149,7 +150,7 @@ alias unix_timer="watch -n 1 date +%s"
 # --dirsfirst List directories before files
 # --metafirst Print the meta-data information at the beginning of the line rather
 #             than after the indentation lines.
-alias tree="tree --du -h -F -rc --dirsfirst --metafirst"
+alias t="tree --du -h -F -rc --dirsfirst --metafirst"
 # ==============================================================================
 # COMPLETION
 # ==============================================================================
@@ -222,10 +223,10 @@ if [ $? -eq 0 ]; then \
 fi)';
 PS1=$PS1"\n\[\033[0m\]"
 # ------------------------------------------------------------------------------
-alias gittree='git log --graph --pretty=oneline --all --abbrev-commit'
+alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
 # Execute `git status` for multiple repositories under a single directory.
-# Usage: git-multistatus [--branch <value>] [--show]
+# Usage: git-multistatus [--branch <value>] [-a]
 # ------------------------------------------------------------------------------
 git-multistatus(){
 
@@ -236,7 +237,7 @@ git-multistatus(){
     # Argument parsing
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --show)
+            -a)
                 show_status=true
                 shift
                 ;;
@@ -257,7 +258,7 @@ git-multistatus(){
     done
 
     if [ "$show_status" = false ]; then
-        echo "Checking branch $branch_to_check. Use --show to show individual changes";
+        echo "Checking branch $branch_to_check. Use -a to show individual changes";
     else
         echo "Checking branch $branch_to_check";
     fi;
@@ -838,6 +839,19 @@ docker_killall(){
     echo "Killed running containers"
   else
     echo "No containers are running"
+  fi
+}
+# ------------------------------------------------------------------------------
+docker_killall_by_label(){
+  DOCKER_CONTAINERS_LABEL="$1"
+
+  # Find the container id of all containers labeled with $DOCKER_CONTAINERS_LABEL
+  CONTAINER_IDS=$(docker ps -q --filter "label=$DOCKER_CONTAINERS_LABEL")
+
+  # Stop and remove all containers with the same label
+  if [ -n "$CONTAINER_IDS" ]; then
+    docker stop $CONTAINER_IDS
+    docker rm   $CONTAINER_IDS
   fi
 }
 # ------------------------------------------------------------------------------
