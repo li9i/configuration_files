@@ -9,7 +9,9 @@
 # -- git-tree()
 # -- git-multistatus()
 # -- git-multirebase()
+# -- git-multirebase-legacy()
 # -- git-is-local-synced-with-remote()
+# -- git-is-local-synced-with-remote-legacy()
 # - TMUX
 # - VARIOUS
 # -- httphere0()
@@ -68,7 +70,9 @@ fi
 # ==============================================================================
 # Set up fzf key bindings and fuzzy completion
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-#export FZF_DEFAULT_OPTS="--preview 'cat {}'"
+
+# -m/--multi: multiple selection with <TAB>
+export FZF_DEFAULT_OPTS="--multi"
 # ==============================================================================
 # PROMPT
 # ==============================================================================
@@ -147,8 +151,10 @@ alias unix_timer="watch -n 1 date +%s"
 # -F          Append a `/' for directories, a `=' for socket files, a `*' for executable files
 # -r          Sort the output in reverse order
 # -c          Sort the output by last status change instead of alphabetically
-# --dirsfirst List directories before files
-# --metafirst Print the meta-data information at the beginning of the line rather
+# --dirsfirst
+#             List directories before files
+# --metafirst
+#             Print the meta-data information at the beginning of the line rather
 #             than after the indentation lines.
 alias t="tree --du -h -F -rc --dirsfirst --metafirst"
 # ==============================================================================
@@ -286,6 +292,99 @@ git-multistatus(){
         fi;
         repo_name=$(basename "${repo%/}");
         status=$(git -C "$repo" status --porcelain 2>/dev/null);
+        sync_info=""; # Initialize sync_info
+
+        if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
+            color="\e[31m";
+            check_sync=1;
+            show_status_flag=true;
+        else
+            if [[ -z "$status" ]]; then
+                color="\e[32m";
+                check_sync=1;
+                show_status_flag=false;
+            else
+                color="\e[31m";
+                check_sync=1;
+                show_status_flag=true;
+            fi;
+        fi;
+
+        printf "${color}%-${max_width}s\e[0m" "$repo_name";
+
+        if [ "$check_sync" -eq 1 ]; then
+            # Capture the output of git-is-local-synced-with-remote
+            sync_output=$(git-is-local-synced-with-remote "$branch_to_check" "$repo");
+            echo -e "$sync_output"; # Display the full sync output, including the parenthesis
+        fi;
+
+        if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
+            echo "-----------------------------------------------------------------------------";
+            echo "Git status for: $repo_name";
+            git -C "$repo" status;
+            echo "—————————————————————————————————————————————————————————————————————————————";
+        fi;
+    done
+}
+# ------------------------------------------------------------------------------
+git-multistatus-legacy(){
+
+    # Default branch
+    branch_to_check="main";
+    show_status=false;
+
+    # Argument parsing
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -a)
+                show_status=true
+                shift
+                ;;
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    if [ "$show_status" = false ]; then
+        echo "Checking branch $branch_to_check. Use -a to show individual changes";
+    else
+        echo "Checking branch $branch_to_check";
+    fi;
+
+    echo "---";
+
+    REPO_DIR=".";
+    max_width=0;
+
+    # Find the maximum width of repository names for formatting
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        (( ${#repo_name} > max_width )) && max_width=${#repo_name};
+    done;
+
+    max_width=$((max_width + 2));
+
+    # Check each repository
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        status=$(git -C "$repo" status --porcelain 2>/dev/null);
 
         if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
             color="\e[31m";
@@ -319,6 +418,88 @@ git-multistatus(){
 }
 # ------------------------------------------------------------------------------
 git-is-local-synced-with-remote() {
+  local branch="$1"
+  local repo_dir="$2"
+
+  if [[ -z "$branch" ]]; then
+    echo "Usage: branch_sync <branch_name> [<repo_directory>]"
+    return 1
+  fi
+
+  # Check if repo_dir is provided and is a valid directory
+  if [[ -n "$repo_dir" && ! -d "$repo_dir" ]]; then
+    echo "Error: '$repo_dir' is not a valid directory."
+    return 1
+  fi
+
+  # Use the provided repo_dir or assume the current directory
+  local git_dir
+  if [[ -n "$repo_dir" ]]; then
+      git_dir="$repo_dir"
+  else
+      git_dir="." # Current directory
+  fi
+
+  # Check if it's a git repository (inside the given directory or current dir)
+  if ! command -v git &> /dev/null || ! git -C "$git_dir" rev-parse --is-inside-work-tree &> /dev/null; then
+    echo "Error: Not a Git repository (in $git_dir)."
+    return 1
+  fi
+
+
+  # Check if the branch exists locally
+  if ! git -C "$git_dir" show-ref --verify "refs/heads/$branch" > /dev/null; then
+    echo "Branch '$branch' does not exist locally."
+    return 1
+  fi
+
+  # Check if the remote tracking branch exists
+  if ! git -C "$git_dir" show-ref --verify "refs/remotes/origin/$branch" > /dev/null; then
+      echo "Remote branch 'origin/$branch' does not exist."
+      return 1
+  fi
+
+
+  # Get the SHA-1 hash of the local branch
+  local local_sha=$(git -C "$git_dir" rev-parse "refs/heads/$branch")
+
+  # Get the SHA-1 hash of the remote tracking branch
+  git -C "$git_dir" fetch origin &> /dev/null
+  local remote_sha=$(git -C "$git_dir" rev-parse "refs/remotes/origin/$branch")
+
+  # Define colors
+  GREEN='\033[0;32m'
+  RED='\033[0;31m'
+  YELLOW='\033[0;33m'
+  NC='\033[0m'  # No Color (reset)
+
+  # Compare the SHA-1 hashes
+  if [[ "$local_sha" == "$remote_sha" ]]; then
+    echo -e "  ${NC}Branch '$branch' is up to date with origin/$branch${NC}"
+    return 0  # Return 0 for success (aligned)
+  else
+    # Determine which is older
+    local local_commit_time=$(git -C "$git_dir" show -s --format=%ci "$local_sha")
+    local remote_commit_time=$(git -C "$git_dir" show -s --format=%ci "$remote_sha")
+
+    local_epoch=$(date -d "$local_commit_time" +%s)
+    remote_epoch=$(date -d "$remote_commit_time" +%s)
+
+    local_or_remote=""
+    if [[ "$local_epoch" -lt "$remote_epoch" ]]; then
+      local_or_remote="(local older)"
+    elif [[ "$remote_epoch" -lt "$local_epoch" ]]; then
+      local_or_remote="(remote older)"
+    else
+      local_or_remote="(same age but different history)" # Should be rare, but covers divergent histories
+    fi
+
+    echo -e "  ${YELLOW}Branch '$branch' is NOT up to date with origin/$branch ${local_or_remote}${NC}"
+    return 1  # Return 1 for failure (not aligned)
+  fi
+}
+# ------------------------------------------------------------------------------
+git-is-local-synced-with-remote-legacy() {
   local branch="$1"
   local repo_dir="$2"
 
@@ -627,6 +808,7 @@ if __name__ == '__main__':
     httpd.serve_forever()
 EOF
 }
+# ------------------------------------------------------------------------------
 # ==============================================================================
 # Grep text and replace it
 # Usage: replace_text [--dry-run] <search_pattern> <replacement_text>
