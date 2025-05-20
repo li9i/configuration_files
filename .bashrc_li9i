@@ -487,9 +487,9 @@ git-is-local-synced-with-remote() {
 
     local_or_remote=""
     if [[ "$local_epoch" -lt "$remote_epoch" ]]; then
-      local_or_remote="(local older)"
+      local_or_remote="(local is behind)"
     elif [[ "$remote_epoch" -lt "$local_epoch" ]]; then
-      local_or_remote="(remote older)"
+      local_or_remote="(remote is behind)"
     else
       local_or_remote="(same age but different history)" # Should be rare, but covers divergent histories
     fi
