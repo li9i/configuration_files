@@ -139,6 +139,7 @@ alias l='ls -CF'
 # ls after cd: my absolute favorite
 cd() { builtin cd "$@" && ls; }
 cp() { rsync -ah --progress --info=progress2 "$@"; }
+cal() { ncal -M -b; }
 # ------------------------------------------------------------------------------
 # Get the unix timestamp of now with nanosec resolution
 alias unix_timestamp="date +'%s.%N'"
