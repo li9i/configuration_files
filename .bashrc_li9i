@@ -192,7 +192,7 @@ __prompt_command_func() {
     local time_elapsed_ns=$((timer_end - timer_start))
 
     # Use LC_NUMERIC=C to force a "." decimal separator for printf and bc.
-    local time_elapsed_s=$(LC_NUMERIC=C printf "%.3f" "${time_elapsed_ns}e-9")
+    local time_elapsed_s=$(LC_NUMERIC=C printf "%.2f" "${time_elapsed_ns}e-9")
 
     # Check if elapsed time is below threshold
     if (( $(echo "$time_elapsed_s < $threshold" | LC_NUMERIC=C bc -l) )); then
@@ -203,9 +203,10 @@ __prompt_command_func() {
         # Correctly calculate minutes and seconds for durations > 60s
         local minutes=$(echo "scale=0; $time_elapsed_s / 60" | LC_NUMERIC=C bc)
         local seconds=$(echo "$time_elapsed_s - ($minutes * 60)" | LC_NUMERIC=C bc -l)
-        local seconds_fmt=$(printf "%.2f" "$seconds")
+        local seconds_fmt=$(LC_NUMERIC=C printf "%.2f" "$seconds")
+        local seconds_dmt=$(LC_NUMERIC=C printf "%.0f" "$seconds")
 
-        LAST_CMD_TIME="${minutes}m ${seconds_fmt}s"
+        LAST_CMD_TIME="${minutes}m ${seconds_dmt}s"
       else
         LAST_CMD_TIME="${time_elapsed_s}s"
       fi
@@ -220,7 +221,6 @@ __prompt_command_func() {
   # Always reset timer_start for the next cycle.
   timer_start=""
 }
-
 PROMPT_COMMAND=__prompt_command_func
 
 # The DEBUG trap. It runs BEFORE every command.
