@@ -180,7 +180,7 @@ bind 'set colored-stats on'
 # ==============================================================================
 export GIT_PS1_SHOWDIRTYSTATE=1
 
-# Command Execution Time Prompt
+# --- START: Command Execution Time Prompt (Corrected) ---
 
 # This is the command that PROMPT_COMMAND will execute.
 # We need to know its name to ignore it in the DEBUG trap.
@@ -200,11 +200,16 @@ __prompt_command_func() {
     else
       # Use bc for comparison, ensuring the locale is correct.
       if (( $(echo "$time_elapsed_s > 60" | LC_NUMERIC=C bc -l) )); then
-        local minutes=$(echo "$time_elapsed_s / 60" | LC_NUMERIC=C bc -l | xargs printf "%.0f")
-        local seconds=$(echo "$time_elapsed_s % 60" | LC_NUMERIC=C bc -l | xargs printf "%.2f")
-        LAST_CMD_TIME="${minutes}m${seconds}s"
+        # --- START of THE FIX ---
+        # Correctly calculate minutes and seconds for durations > 60s
+        local minutes=$(echo "scale=0; $time_elapsed_s / 60" | LC_NUMERIC=C bc)
+        local seconds=$(echo "$time_elapsed_s - ($minutes * 60)" | LC_NUMERIC=C bc -l)
+        local seconds_fmt=$(printf "%.2f" "$seconds")
+
+        LAST_CMD_TIME="(${minutes}m${seconds_fmt}s)"
+        # --- END of THE FIX ---
       else
-        LAST_CMD_TIME="${time_elapsed_s}s"
+        LAST_CMD_TIME="(${time_elapsed_s}s)"
       fi
 
       local term_width=$(tput cols)
@@ -228,19 +233,20 @@ trap '
   fi' DEBUG
 
 
+# --- Your PS1 Configuration ---
+
 export GIT_PS1_SHOWDIRTYSTATE=1
 
 # Define colors for git status
 BPurple='\[\033[1;35m\]'
 Green='\[\033[0;32m\]'
 IRed='\[\033[0;91m\]'
-Yellow='\[\033[0;33m\]'
 Color_Off='\[\033[0m\]'
 
-# Define the LEFT part of the prompt
+# 1. Define the LEFT part of your prompt
 PS1_LEFT="\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 \t | \D{%d-%m-%y} : \u@\h:\w "
 
-# git status logic
+# Your git status logic
 PS1_LEFT+='$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
 	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
@@ -254,7 +260,7 @@ if [ $? -eq 0 ]; then \
 				echo "'$Green'"$(__git_ps1 "(%s)**"); \
 			else \
 				echo "'$IRed'"$(__git_ps1 "(%s)**"); \
-			fi)  "; \
+			fi)  "; \
 		fi)"; \
 	else \
 		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
@@ -266,14 +272,13 @@ if [ $? -eq 0 ]; then \
 				echo "'$Green'"$(__git_ps1 "(%s)"); \
 			else \
 				echo "'$IRed'"$(__git_ps1 "(%s)"); \
-			fi)  "; \
+			fi)  "; \
 		fi)"; \
 	fi)" ;\
 fi)'
 
-# Assemble the final PS1 using the carriage return trick
+# 2. Assemble the final PS1 using the carriage return trick
 PS1="\n${Color_Off}\$RIGHT_PADDED_TIME\r${PS1_LEFT}${Color_Off}\n"
-
 # ------------------------------------------------------------------------------
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
