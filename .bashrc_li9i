@@ -200,16 +200,14 @@ __prompt_command_func() {
     else
       # Use bc for comparison, ensuring the locale is correct.
       if (( $(echo "$time_elapsed_s > 60" | LC_NUMERIC=C bc -l) )); then
-        # --- START of THE FIX ---
         # Correctly calculate minutes and seconds for durations > 60s
         local minutes=$(echo "scale=0; $time_elapsed_s / 60" | LC_NUMERIC=C bc)
         local seconds=$(echo "$time_elapsed_s - ($minutes * 60)" | LC_NUMERIC=C bc -l)
         local seconds_fmt=$(printf "%.2f" "$seconds")
 
-        LAST_CMD_TIME="(${minutes}m${seconds_fmt}s)"
-        # --- END of THE FIX ---
+        LAST_CMD_TIME="${minutes}m ${seconds_fmt}s"
       else
-        LAST_CMD_TIME="(${time_elapsed_s}s)"
+        LAST_CMD_TIME="${time_elapsed_s}s"
       fi
 
       local term_width=$(tput cols)
