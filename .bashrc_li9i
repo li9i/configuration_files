@@ -185,6 +185,7 @@ export GIT_PS1_SHOWDIRTYSTATE=1
 # This is the command that PROMPT_COMMAND will execute.
 # We need to know its name to ignore it in the DEBUG trap.
 __prompt_command_func() {
+  local threshold=0.050
   # If timer_start is set, a command was just executed.
   if [ -n "$timer_start" ]; then
     local timer_end=$(date +%s%N)
@@ -193,17 +194,22 @@ __prompt_command_func() {
     # Use LC_NUMERIC=C to force a "." decimal separator for printf and bc.
     local time_elapsed_s=$(LC_NUMERIC=C printf "%.3f" "${time_elapsed_ns}e-9")
 
-    # Use bc for comparison, ensuring the locale is correct.
-    if (( $(echo "$time_elapsed_s > 60" | LC_NUMERIC=C bc -l) )); then
-      local minutes=$(echo "$time_elapsed_s / 60" | LC_NUMERIC=C bc -l | xargs printf "%.0f")
-      local seconds=$(echo "$time_elapsed_s % 60" | LC_NUMERIC=C bc -l | xargs printf "%.2f")
-      LAST_CMD_TIME="${minutes}m${seconds}s"
+    # Check if elapsed time is below threshold
+    if (( $(echo "$time_elapsed_s < $threshold" | LC_NUMERIC=C bc -l) )); then
+      RIGHT_PADDED_TIME=""
     else
-      LAST_CMD_TIME="${time_elapsed_s}s"
-    fi
+      # Use bc for comparison, ensuring the locale is correct.
+      if (( $(echo "$time_elapsed_s > 60" | LC_NUMERIC=C bc -l) )); then
+        local minutes=$(echo "$time_elapsed_s / 60" | LC_NUMERIC=C bc -l | xargs printf "%.0f")
+        local seconds=$(echo "$time_elapsed_s % 60" | LC_NUMERIC=C bc -l | xargs printf "%.2f")
+        LAST_CMD_TIME="${minutes}m${seconds}s"
+      else
+        LAST_CMD_TIME="${time_elapsed_s}s"
+      fi
 
-    local term_width=$(tput cols)
-    RIGHT_PADDED_TIME=$(printf "%*s" "${term_width:-80}" "$LAST_CMD_TIME")
+      local term_width=$(tput cols)
+      RIGHT_PADDED_TIME=$(printf "%*s" "${term_width:-80}" "$LAST_CMD_TIME")
+    fi
   else
     # No timer was started, so no command was run. Clear the time display.
     RIGHT_PADDED_TIME=""
@@ -211,6 +217,7 @@ __prompt_command_func() {
   # Always reset timer_start for the next cycle.
   timer_start=""
 }
+
 PROMPT_COMMAND=__prompt_command_func
 
 # The DEBUG trap. It runs BEFORE every command.
