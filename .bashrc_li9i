@@ -9,9 +9,7 @@
 # -- git-tree()
 # -- git-multistatus()
 # -- git-multirebase()
-# -- git-multirebase-legacy()
 # -- git-is-local-synced-with-remote()
-# -- git-is-local-synced-with-remote-legacy()
 # - TMUX
 # - VARIOUS
 # -- httphere0()
@@ -180,69 +178,109 @@ bind 'set colored-stats on'
 # ==============================================================================
 # GIT
 # ==============================================================================
-Green="\[\033[0;32m\]"        # Green
-IRed="\[\033[0;91m\]"         # Red
-BIYellow="\[\033[1;93m\]"     # Yellow
-Yellow="\[\033[0;33m\]"       # Yellow
-BPurple="\[\033[1;35m\]"      # Purple
+export GIT_PS1_SHOWDIRTYSTATE=1
+
+# Command Execution Time Prompt
+
+# This is the command that PROMPT_COMMAND will execute.
+# We need to know its name to ignore it in the DEBUG trap.
+__prompt_command_func() {
+  # If timer_start is set, a command was just executed.
+  if [ -n "$timer_start" ]; then
+    local timer_end=$(date +%s%N)
+    local time_elapsed_ns=$((timer_end - timer_start))
+
+    # Use LC_NUMERIC=C to force a "." decimal separator for printf and bc.
+    local time_elapsed_s=$(LC_NUMERIC=C printf "%.3f" "${time_elapsed_ns}e-9")
+
+    # Use bc for comparison, ensuring the locale is correct.
+    if (( $(echo "$time_elapsed_s > 60" | LC_NUMERIC=C bc -l) )); then
+      local minutes=$(echo "$time_elapsed_s / 60" | LC_NUMERIC=C bc -l | xargs printf "%.0f")
+      local seconds=$(echo "$time_elapsed_s % 60" | LC_NUMERIC=C bc -l | xargs printf "%.2f")
+      LAST_CMD_TIME="${minutes}m${seconds}s"
+    else
+      LAST_CMD_TIME="${time_elapsed_s}s"
+    fi
+
+    local term_width=$(tput cols)
+    RIGHT_PADDED_TIME=$(printf "%*s" "${term_width:-80}" "$LAST_CMD_TIME")
+  else
+    # No timer was started, so no command was run. Clear the time display.
+    RIGHT_PADDED_TIME=""
+  fi
+  # Always reset timer_start for the next cycle.
+  timer_start=""
+}
+PROMPT_COMMAND=__prompt_command_func
+
+# The DEBUG trap. It runs BEFORE every command.
+trap '
+  # Start timer ONLY if BASH_COMMAND is not empty and not our prompt function.
+  if [ -n "$BASH_COMMAND" ] && [ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]; then
+    timer_start=$(date +%s%N);
+  fi' DEBUG
+
 
 export GIT_PS1_SHOWDIRTYSTATE=1
-#PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 (\t | \D{%d-%m-%y}) [\u/\h | \w ]"
-PS1="\n\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 \t | \D{%d-%m-%y} : \u@\h:\w "
-PS1=$PS1'$(git branch &>/dev/null;\
+
+# Define colors for git status
+BPurple='\[\033[1;35m\]'
+Green='\[\033[0;32m\]'
+IRed='\[\033[0;91m\]'
+Yellow='\[\033[0;33m\]'
+Color_Off='\[\033[0m\]'
+
+# Define the LEFT part of the prompt
+PS1_LEFT="\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 \t | \D{%d-%m-%y} : \u@\h:\w "
+
+# git status logic
+PS1_LEFT+='$(git branch &>/dev/null;\
 if [ $? -eq 0 ]; then \
 	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
 	if [ "$?" -eq "0" ]; then \
 		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
 		if [ "$?" -eq "0" ]; then \
-			# @4 - Clean repository - Untracked Files
 			echo "'$BPurple'"$(__git_ps1 "(%s)**"); \
 		else \
 			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
 			if [ "$?" -eq "0" ]; then \
-				# @4 - Clean repository - nothing to commit
 				echo "'$Green'"$(__git_ps1 "(%s)**"); \
 			else \
-				# @5 - Changes to working tree
 				echo "'$IRed'"$(__git_ps1 "(%s)**"); \
-			fi)  "; \
+			fi)  "; \
 		fi)"; \
 	else \
 		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
 		if [ "$?" -eq "0" ]; then \
-			# @4 - Clean repository - Untracked Files
 			echo "'$BPurple'"$(__git_ps1 "(%s)"); \
 		else \
 			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
 			if [ "$?" -eq "0" ]; then \
-				# @4 - Clean repository - nothing to commit
 				echo "'$Green'"$(__git_ps1 "(%s)"); \
 			else \
-				# @5 - Changes to working tree
 				echo "'$IRed'"$(__git_ps1 "(%s)"); \
-			fi)  "; \
+			fi)  "; \
 		fi)"; \
 	fi)" ;\
-#~ fi \
-#~ else \
-	#~ # @2 - Prompt when not in GIT repo
-	#~ echo " '$Yellow$PathShort$Color_Off' "; \
-fi)';
-PS1=$PS1"\n\[\033[0m\]"
+fi)'
+
+# Assemble the final PS1 using the carriage return trick
+PS1="\n${Color_Off}\$RIGHT_PADDED_TIME\r${PS1_LEFT}${Color_Off}\n"
+
 # ------------------------------------------------------------------------------
 alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
 # ------------------------------------------------------------------------------
 # Execute `git status` for multiple repositories under a single directory.
-# Usage: git-multistatus [--branch <value>] [-q|--quiet]
+# Usage: git-multistatus [--branch <value>] [-a]
 # ------------------------------------------------------------------------------
-git-multistatus () 
-{ 
+git-multistatus ()
+{
     branch_to_check="main";
-    show_status=false;
+    show_status=true;
     while [[ $# -gt 0 ]]; do
-        case "$1" in 
-            -a)
-                show_status=true;
+        case "$1" in
+            -q|--quiet)
+                show_status=false;
                 shift
             ;;
             --branch)
@@ -260,58 +298,69 @@ git-multistatus ()
             ;;
         esac;
     done;
+
     if [ "$show_status" = false ]; then
         echo "Checking branch $branch_to_check. Use -a to show individual changes";
     else
         echo "Checking branch $branch_to_check";
     fi;
+
     echo "---";
+
     REPO_DIR=".";
     max_width=0;
-    for repo in "$REPO_DIR"/*/;
-    do
-        if [ ! -d "$repo/.git" ]; then
-            continue;
-        fi;
-        repo_name=$(basename "${repo%/}");
-        (( ${#repo_name} > max_width )) && max_width=${#repo_name};
-    done;
+    repo_list=()
+
+    for repo in "$REPO_DIR"/*/; do
+        if [ -d "$repo/.git" ]; then
+            repo_name=$(basename "${repo%/}")
+            repo_list+=("$repo")
+            (( ${#repo_name} > max_width )) && max_width=${#repo_name}
+        fi
+    done
     max_width=$((max_width + 2));
-    for repo in "$REPO_DIR"/*/;
-    do
-        if [ ! -d "$repo/.git" ]; then
-            continue;
-        fi;
-        repo_name=$(basename "${repo%/}");
-        status=$(git -C "$repo" status --porcelain 2>/dev/null);
-        sync_info="";
-        if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
-            color="\e[31m";
-            check_sync=1;
-            show_status_flag=true;
+
+    export branch_to_check max_width show_status
+
+    parallel --no-notice --jobs "$(nproc)" '
+        repo="{}"
+        repo_name=$(basename "${repo%/}")
+        status=$(git -C "$repo" status --porcelain 2>/dev/null)
+
+        sync_info=""
+        if [[ -n $(echo "$status" | grep "^M") ]] || [[ -n $(echo "$status" | grep "^ M") ]]; then
+            color="\e[31m"
+            check_sync=1
+            show_status_flag=true
         else
             if [[ -z "$status" ]]; then
-                color="\e[32m";
-                check_sync=1;
-                show_status_flag=false;
+                color="\e[32m"
+                check_sync=1
+                show_status_flag=false
             else
-                color="\e[31m";
-                check_sync=1;
-                show_status_flag=true;
-            fi;
-        fi;
-        printf "${color}%-${max_width}s\e[0m" "$repo_name";
+                color="\e[31m"
+                check_sync=1
+                show_status_flag=true
+            fi
+        fi
+
+        output=""
+        output+="$(printf "${color}%-${max_width}s\e[0m" "$repo_name")"
+
         if [ "$check_sync" -eq 1 ]; then
-            sync_output=$(git-is-local-synced-with-remote "$branch_to_check" "$repo");
-            echo -e "$sync_output";
-        fi;
+            sync_output=$(git-is-local-synced-with-remote "$branch_to_check" "$repo")
+            output+=" $sync_output"
+        fi
+
+        echo -e "$output"
+
         if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
-            echo "-----------------------------------------------------------------------------";
-            echo "Git status for: $repo_name";
-            git -C "$repo" status;
-            echo "—————————————————————————————————————————————————————————————————————————————";
-        fi;
-    done
+            echo "-----------------------------------------------------------------------------"
+            echo "Git status for: $repo_name"
+            git -C "$repo" status
+            echo "—————————————————————————————————————————————————————————————————————————————"
+        fi
+    ' ::: "${repo_list[@]}"
 }
 # ------------------------------------------------------------------------------
 git-is-local-synced-with-remote() {
@@ -395,6 +444,7 @@ git-is-local-synced-with-remote() {
     return 1  # Return 1 for failure (not aligned)
   fi
 }
+export -f git-is-local-synced-with-remote
 # ------------------------------------------------------------------------------
 # Execute `git rebase origin/<branch>` for multiple repositories under a single directory.
 # Usage: git-multirebase [--branch <value>]
