@@ -1,6 +1,70 @@
 # ==============================================================================
 # COMPLETION FUNCTIONS
 # ==============================================================================
+_colcon_build_autocomplete() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="--ws --all --packages-select --help -h"
+
+  case "$prev" in
+    --ws)
+      # suggest directories
+      COMPREPLY=( $(compgen -d -- "$cur") )
+      return 0
+      ;;
+    --packages-select)
+      # find packages in the workspace or default path
+      local ws=~/ros2_ws
+      for ((i=0; i<${#COMP_WORDS[@]}; i++)); do
+        if [[ "${COMP_WORDS[i]}" == "--ws" ]]; then
+          ws="${COMP_WORDS[i+1]}"
+          break
+        fi
+      done
+      if [ -d "$ws/src" ]; then
+        local pkgs=$(colcon list --base-paths "$ws" 2>/dev/null | awk '{print $1}')
+        COMPREPLY=( $(compgen -W "$pkgs" -- "$cur") )
+      fi
+      return 0
+      ;;
+  esac
+
+  COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+}
+# ------------------------------------------------------------------------------
+_colcon_clean_autocomplete() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  opts="--ws --all --packages-select --help -h"
+
+  case "$prev" in
+    --ws)
+      COMPREPLY=( $(compgen -d -- "$cur") )
+      return 0
+      ;;
+    --packages-select)
+      local ws=~/ros2_ws
+      for ((i=0; i<${#COMP_WORDS[@]}; i++)); do
+        if [[ "${COMP_WORDS[i]}" == "--ws" ]]; then
+          ws="${COMP_WORDS[i+1]}"
+          break
+        fi
+      done
+      if [ -d "$ws/src" ]; then
+        local pkgs=$(colcon list --base-paths "$ws" 2>/dev/null | awk '{print $1}')
+        COMPREPLY=( $(compgen -W "$pkgs" -- "$cur") )
+      fi
+      return 0
+      ;;
+  esac
+
+  COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+}
+# ------------------------------------------------------------------------------
 _git_multistatus_completion() {
     local cur=${COMP_WORDS[COMP_CWORD]}
     local prev=${COMP_WORDS[COMP_CWORD-1]}
@@ -95,6 +159,8 @@ _recently_completion() {
 # ==============================================================================
 # COMPLETION REGISTRATION
 # ==============================================================================
+complete -F _colcon_build_autocomplete colcon_build
+complete -F _colcon_clean_autocomplete colcon_clean
 complete -F _git_multistatus_completion git-multistatus
 complete -F _git_multirebase_completion git-multirebase
 complete -F _git_is_local_synced_completion git-is-local-synced-with-remote
