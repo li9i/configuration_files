@@ -628,6 +628,18 @@ git-multirebase ()
         printf "${color}%-${max_width}s\e[0m %s\n" "$repo_name" "$output"
     done;
 }
+# ------------------------------------------------------------------------------
+# git status anywhere in a repo and list all changed files relative to pwd
+# ------------------------------------------------------------------------------
+gitstfiles() {
+  local repo_root current_dir
+  repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "Not in a Git repo"; return 1; }
+  current_dir=$(pwd)
+
+  git status --porcelain | awk '{print $2}' | while read -r path; do
+    python3 -c "import os; print(os.path.relpath(os.path.join('$repo_root', '$path'), '$current_dir'))"
+  done
+}
 # ==============================================================================
 # TMUX
 # ==============================================================================
