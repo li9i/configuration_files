@@ -1026,9 +1026,10 @@ docker_clean(){
 }
 # ------------------------------------------------------------------------------
 docker_cleanall(){
-
   # I don't want to enter `y` every time I call this function ([y/N])
   yes | docker system prune
+  # Remove volumes
+  docker volume ls -f dangling=true | awk 'NR > 1 {print $2}' | xargs docker volume rm
 }
 # ------------------------------------------------------------------------------
 docker_killall(){
