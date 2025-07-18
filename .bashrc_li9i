@@ -155,7 +155,7 @@ alias unix_timer="watch -n 1 date +%s"
 # --metafirst
 #             Print the meta-data information at the beginning of the line rather
 #             than after the indentation lines.
-alias t="tree --du -h -F -rc --dirsfirst --metafirst"
+alias t="tree --du -h -F --dirsfirst --metafirst"
 # ==============================================================================
 # COMPLETION
 # ==============================================================================
