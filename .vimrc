@@ -299,3 +299,15 @@ nnoremap <silent> <2-LeftMouse> :let @/='\V\<'.escape(expand('<cword>'), '\').'\
 :  autocmd BufEnter,FocusGained,InsertLeave,WinEnter * if &nu && mode() != "i" | set rnu   | endif
 :  autocmd BufLeave,FocusLost,InsertEnter,WinLeave   * if &nu                  | set nornu | endif
 :augroup END
+
+" clang-format integration
+" Must place
+" https://github.com/llvm/llvm-project/blob/main/clang/tools/clang-format/clang-format.py
+" in ~/.vim-clang-format.py
+if has('python')
+  map <C-I> :pyf ~/.vim-clang-format.py<cr>
+  imap <C-I> <c-o>:pyf ~/.vim-clang-format.py<cr>
+elseif has('python3')
+  map <C-I> :py3f ~/.vim-clang-format.py<cr>
+  imap <C-I> <c-o>:py3f ~/.vim-clang-format.py<cr>
+endif
