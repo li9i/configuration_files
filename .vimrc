@@ -304,6 +304,7 @@ nnoremap <silent> <2-LeftMouse> :let @/='\V\<'.escape(expand('<cword>'), '\').'\
 " Must place
 " https://github.com/llvm/llvm-project/blob/main/clang/tools/clang-format/clang-format.py
 " in ~/.vim-clang-format.py
+# and make sure `sudo apt-get install clang-format` has been executed successfully
 if has('python')
   map <C-I> :pyf ~/.vim-clang-format.py<cr>
   imap <C-I> <c-o>:pyf ~/.vim-clang-format.py<cr>
