@@ -1011,6 +1011,23 @@ function_info(){
 # ==============================================================================
 # DOCKER
 # ==============================================================================
+# Check disk usage by docker images
+docker_dsck() {
+  # Get Docker usage from docker system df
+  docker_usage=$(docker system df | awk '/Images/ {print $4}' | sed 's/GB//')
+
+  # Get Docker directory
+  docker_dir=$(docker info 2>/dev/null | grep "Docker Root Dir:" | cut -d: -f2 | xargs)
+
+  # Get total disk capacity
+  total_capacity=$(df -BG "$docker_dir" | awk 'NR==2 {print $2}' | sed 's/G//')
+
+  # Calculate percentage
+  percentage=$(echo "scale=1; $docker_usage * 100 / $total_capacity" | bc)
+
+  echo "Usage of $docker_dir: ${percentage}% of ${total_capacity}GB"
+}
+# ------------------------------------------------------------------------------
 docker_clean(){
 
   # are any containers currently up?
