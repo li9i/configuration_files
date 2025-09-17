@@ -6,9 +6,12 @@
 	logtree = log --graph --all --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%cr)%C(reset) %C(white)%s%C(reset)%C(bold white)— %cn%C(reset)%C(bold yellow)%d%C(reset)' --abbrev-commit --date=relative
 	st = status
 	co = checkout
+  changed-files = "!git status --porcelain | awk '{print $2}'"
 
 [core]
 	excludesfile = ~/.gitignore
+	autocrlf = input
+	safecrlf = false
 [color]
 	ui = true
 [diff]
@@ -16,3 +19,10 @@
 	guitool = meld
 [merge]
 	tool = meld
+[init]
+	defaultBranch = master
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
