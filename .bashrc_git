@@ -1,0 +1,868 @@
+# ------------------------------------------------------------------------------
+# - GIT
+# ------------------------------------------------------------------------------
+# -- git prompt (PS1)
+# -- git-tree()
+# -- git-multistatus()
+# -- git-multistatus()-https
+# -- git-multistatus()-ssh
+# -- git-multirebase()-https
+# -- git-multirebase()-ssh
+# -- git-multirebase()
+# -- git-is-local-synced-with-remote()
+# -- git-multipush-https()
+# -- git-multipush-ssh()
+# -- git-multisync()
+# ------------------------------------------------------------------------------
+export GIT_PS1_SHOWDIRTYSTATE=1
+
+# --- START: Command Execution Time Prompt (Corrected) ---
+
+# This is the command that PROMPT_COMMAND will execute.
+# We need to know its name to ignore it in the DEBUG trap.
+__prompt_command_func() {
+  local threshold=0.050
+  # If timer_start is set, a command was just executed.
+  if [ -n "$timer_start" ]; then
+    local timer_end=$(date +%s%N)
+    local time_elapsed_ns=$((timer_end - timer_start))
+
+    # Use LC_NUMERIC=C to force a "." decimal separator for printf and bc.
+    local time_elapsed_s=$(LC_NUMERIC=C printf "%.2f" "${time_elapsed_ns}e-9")
+
+    # Check if elapsed time is below threshold
+    if (( $(echo "$time_elapsed_s < $threshold" | LC_NUMERIC=C bc -l) )); then
+      RIGHT_PADDED_TIME=""
+    else
+      # Use bc for comparison, ensuring the locale is correct.
+      if (( $(echo "$time_elapsed_s > 60" | LC_NUMERIC=C bc -l) )); then
+        # Correctly calculate minutes and seconds for durations > 60s
+        local minutes=$(echo "scale=0; $time_elapsed_s / 60" | LC_NUMERIC=C bc)
+        local seconds=$(echo "$time_elapsed_s - ($minutes * 60)" | LC_NUMERIC=C bc -l)
+        local seconds_fmt=$(LC_NUMERIC=C printf "%.2f" "$seconds")
+        local seconds_dmt=$(LC_NUMERIC=C printf "%.0f" "$seconds")
+
+        LAST_CMD_TIME="${minutes}m ${seconds_dmt}s"
+      else
+        LAST_CMD_TIME="${time_elapsed_s}s"
+      fi
+
+      local term_width=$(tput cols)
+      RIGHT_PADDED_TIME=$(printf "%*s" "${term_width:-80}" "$LAST_CMD_TIME")
+    fi
+  else
+    # No timer was started, so no command was run. Clear the time display.
+    RIGHT_PADDED_TIME=""
+  fi
+  # Always reset timer_start for the next cycle.
+  timer_start=""
+}
+
+PROMPT_COMMAND=__prompt_command_func
+
+# The DEBUG trap. It runs BEFORE every command.
+trap '
+  # Start timer ONLY if BASH_COMMAND is not empty and not our prompt function.
+  if [ -n "$BASH_COMMAND" ] && [ "$BASH_COMMAND" != "$PROMPT_COMMAND" ]; then
+    timer_start=$(date +%s%N);
+  fi' DEBUG
+
+
+# --- Your PS1 Configuration ---
+
+export GIT_PS1_SHOWDIRTYSTATE=1
+
+# Define colors for git status
+BPurple='\[\033[1;35m\]'
+Green='\[\033[0;32m\]'
+IRed='\[\033[0;91m\]'
+Color_Off='\[\033[0m\]'
+
+# 1. Define the LEFT part of your prompt
+PS1_LEFT="\$(if [[ \$? == 0 ]]; then echo \"\[\033[0;94m\]\"; else echo \"\[\033[0;31m\]\"; fi)\342\226\210\342\226\210 \t | \D{%d-%m-%y} : \u@\h:\w "
+
+# Your git status logic
+PS1_LEFT+='$(git branch &>/dev/null;\
+if [ $? -eq 0 ]; then \
+	echo "$(echo `git status` | grep "# Your branch is"> /dev/null 2>&1; \
+	if [ "$?" -eq "0" ]; then \
+		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
+		if [ "$?" -eq "0" ]; then \
+			echo "'$BPurple'"$(__git_ps1 "(%s)**"); \
+		else \
+			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
+			if [ "$?" -eq "0" ]; then \
+				echo "'$Green'"$(__git_ps1 "(%s)**"); \
+			else \
+				echo "'$IRed'"$(__git_ps1 "(%s)**"); \
+			fi)  "; \
+		fi)"; \
+	else \
+		echo "$(echo `git status` | grep "# Untracked files" > /dev/null 2>&1; \
+		if [ "$?" -eq "0" ]; then \
+			echo "'$BPurple'"$(__git_ps1 "(%s)"); \
+		else \
+			echo "$(echo `git status` | grep "nothing to commit" > /dev/null 2>&1; \
+			if [ "$?" -eq "0" ]; then \
+				echo "'$Green'"$(__git_ps1 "(%s)"); \
+			else \
+				echo "'$IRed'"$(__git_ps1 "(%s)"); \
+			fi)  "; \
+		fi)"; \
+	fi)" ;\
+fi)'
+
+# 2. Assemble the final PS1 using the carriage return trick
+PS1="\n${Color_Off}\$RIGHT_PADDED_TIME\r${PS1_LEFT}${Color_Off}\n"
+# ------------------------------------------------------------------------------
+alias git-tree='git log --graph --pretty=oneline --all --abbrev-commit'
+# ------------------------------------------------------------------------------
+# Execute `git status` for multiple repositories under a single directory.
+# Usage: git-multistatus <--https|-h|--ssh|-s> [--branch <value>] [-q|--quiet]
+# ------------------------------------------------------------------------------
+git-multistatus()
+{
+  local branch="main"
+  local show_status=false
+  local ssh=true
+  local branch_to_check=""
+  local other_args=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -q|--quiet)
+        show_status=false
+        shift
+        ;;
+      -h|--https)
+        ssh=false
+        shift
+        ;;
+      -s|--ssh)
+        ssh=true
+        shift
+        ;;
+      --branch)
+        if [[ -n "$2" ]]; then
+          branch_to_check="$2"
+          shift 2
+        else
+          echo "Error: --branch requires a branch name."
+          return 1
+        fi
+        ;;
+      *)
+        # Store any other arguments to pass through
+        other_args+=("$1")
+        shift
+        ;;
+    esac
+  done
+
+  if [[ "$ssh" == true ]]; then
+    git-multistatus-ssh "${other_args[@]}"
+  else
+    git-multistatus-https "${other_args[@]}"
+  fi
+}
+# ------------------------------------------------------------------------------
+git-multistatus-ssh()
+{
+    branch_to_check="main";
+    show_status=true;
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -q|--quiet)
+                show_status=false;
+                shift
+            ;;
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2";
+                    shift 2;
+                else
+                    echo "Error: --branch requires a branch name.";
+                    return 1;
+                fi
+            ;;
+            *)
+                echo "Unknown option: $1";
+                return 1
+            ;;
+        esac;
+    done;
+
+    if [ "$show_status" = false ]; then
+        echo "Checking branch $branch_to_check. Use -a to show individual changes";
+    else
+        echo "Checking branch $branch_to_check";
+    fi;
+
+    echo "---";
+    REPO_DIR=".";
+    max_width=0;
+    repo_list=()
+
+    for repo in "$REPO_DIR"/*/; do
+        if [ -d "$repo/.git" ]; then
+            repo_name=$(basename "${repo%/}")
+            repo_list+=("$repo")
+            (( ${#repo_name} > max_width )) && max_width=${#repo_name}
+        fi
+    done
+    max_width=$((max_width + 2));
+
+    export branch_to_check max_width show_status
+
+    parallel --no-notice --jobs "$(nproc)" '
+        repo="{}"
+        repo_name=$(basename "${repo%/}")
+        status=$(git -C "$repo" status --porcelain 2>/dev/null)
+
+        sync_info=""
+        if [[ -n $(echo "$status" | grep "^M") ]] || [[ -n $(echo "$status" | grep "^ M") ]]; then
+            color="\e[31m"
+            check_sync=1
+            show_status_flag=true
+        else
+            if [[ -z "$status" ]]; then
+                color="\e[32m"
+                check_sync=1
+                show_status_flag=false
+            else
+                color="\e[31m"
+                check_sync=1
+                show_status_flag=true
+            fi
+        fi
+
+        output=""
+        output+="$(printf "${color}%-${max_width}s\e[0m" "$repo_name")"
+
+        if [ "$check_sync" -eq 1 ]; then
+            sync_output=$(git-is-local-synced-with-remote "$branch_to_check" "$repo")
+            output+=" $sync_output"
+        fi
+
+        echo -e "$output"
+
+        if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
+            echo "-----------------------------------------------------------------------------"
+            echo "Git status for: $repo_name"
+            git -C "$repo" status
+            echo "—————————————————————————————————————————————————————————————————————————————"
+        fi
+    ' ::: "${repo_list[@]}"
+}
+# ------------------------------------------------------------------------------
+git-multistatus-https()
+{
+    branch_to_check="main";
+    show_status=true;
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -q|--quiet)
+                show_status=false;
+                shift
+            ;;
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2";
+                    shift 2;
+                else
+                    echo "Error: --branch requires a branch name.";
+                    return 1;
+                fi
+            ;;
+            *)
+                echo "Unknown option: $1";
+                return 1
+            ;;
+        esac;
+    done;
+
+    if [ "$show_status" = false ]; then
+        echo "Checking branch $branch_to_check. Use -a to show individual changes";
+    else
+        echo "Checking branch $branch_to_check";
+    fi;
+    echo "---";
+    REPO_DIR=".";
+    max_width=0;
+
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        (( ${#repo_name} > max_width )) && max_width=${#repo_name};
+    done;
+    max_width=$((max_width + 2));
+
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        status=$(git -C "$repo" status --porcelain 2>/dev/null);
+        sync_info="";
+
+        if [[ -n $(echo "$status" | grep '^M') ]] || [[ -n $(echo "$status" | grep '^ M') ]]; then
+            color="\e[31m";
+            check_sync=1;
+            show_status_flag=true;
+        else
+            if [[ -z "$status" ]]; then
+                color="\e[32m";
+                check_sync=1;
+                show_status_flag=false;
+            else
+                color="\e[31m";
+                check_sync=1;
+                show_status_flag=true;
+            fi;
+        fi;
+
+        printf "${color}%-${max_width}s\e[0m" "$repo_name";
+
+        if [ "$check_sync" -eq 1 ]; then
+            sync_output=$(git-is-local-synced-with-remote "$branch_to_check" "$repo");
+            echo -e "$sync_output";
+        fi;
+
+        if [[ "$show_status" == true && "$show_status_flag" == true ]]; then
+            echo "-----------------------------------------------------------------------------";
+            echo "Git status for: $repo_name";
+            git -C "$repo" status;
+            echo "—————————————————————————————————————————————————————————————————————————————";
+        fi;
+    done
+}
+# ------------------------------------------------------------------------------
+git-is-local-synced-with-remote()
+{
+  local branch="$1"
+  local repo_dir="$2"
+
+  if [[ -z "$branch" ]]; then
+    echo "Usage: branch_sync <branch_name> [<repo_directory>]"
+    return 1
+  fi
+
+  # Check if repo_dir is provided and is a valid directory
+  if [[ -n "$repo_dir" && ! -d "$repo_dir" ]]; then
+    echo "Error: '$repo_dir' is not a valid directory."
+    return 1
+  fi
+
+  # Use the provided repo_dir or assume the current directory
+  local git_dir
+  if [[ -n "$repo_dir" ]]; then
+      git_dir="$repo_dir"
+  else
+      git_dir="." # Current directory
+  fi
+
+  # Check if it's a git repository (inside the given directory or current dir)
+  if ! command -v git &> /dev/null || ! git -C "$git_dir" rev-parse --is-inside-work-tree &> /dev/null; then
+    echo "Error: Not a Git repository (in $git_dir)."
+    return 1
+  fi
+
+
+  # Check if the branch exists locally
+  if ! git -C "$git_dir" show-ref --verify "refs/heads/$branch" > /dev/null; then
+    echo "Branch '$branch' does not exist locally."
+    return 1
+  fi
+
+  # Check if the remote tracking branch exists
+  if ! git -C "$git_dir" show-ref --verify "refs/remotes/origin/$branch" > /dev/null; then
+      echo "Remote branch 'origin/$branch' does not exist."
+      return 1
+  fi
+
+
+  # Get the SHA-1 hash of the local branch
+  local local_sha=$(git -C "$git_dir" rev-parse "refs/heads/$branch")
+
+  # Get the SHA-1 hash of the remote tracking branch
+  git -C "$git_dir" fetch origin &> /dev/null
+  local remote_sha=$(git -C "$git_dir" rev-parse "refs/remotes/origin/$branch")
+
+  # Define colors
+  GREEN='\033[0;32m'
+  RED='\033[0;31m'
+  YELLOW='\033[0;33m'
+  NC='\033[0m'  # No Color (reset)
+
+  # Compare the SHA-1 hashes
+  if [[ "$local_sha" == "$remote_sha" ]]; then
+    echo -e "  ${NC}Branch '$branch' is up to date with origin/$branch${NC}"
+    return 0  # Return 0 for success (aligned)
+  else
+    # Determine which is older
+    local local_commit_time=$(git -C "$git_dir" show -s --format=%ci "$local_sha")
+    local remote_commit_time=$(git -C "$git_dir" show -s --format=%ci "$remote_sha")
+
+    local_epoch=$(date -d "$local_commit_time" +%s)
+    remote_epoch=$(date -d "$remote_commit_time" +%s)
+
+    local_or_remote=""
+    if [[ "$local_epoch" -lt "$remote_epoch" ]]; then
+      local_or_remote="(local is behind)"
+    elif [[ "$remote_epoch" -lt "$local_epoch" ]]; then
+      local_or_remote="(remote is behind)"
+    else
+      local_or_remote="(same age but different history)" # Should be rare, but covers divergent histories
+    fi
+
+    echo -e "  ${YELLOW}Branch '$branch' is NOT up to date with origin/$branch ${local_or_remote}${NC}"
+    return 1  # Return 1 for failure (not aligned)
+  fi
+}
+export -f git-is-local-synced-with-remote
+# ------------------------------------------------------------------------------
+# HELPER FUNCTION FOR PARALLEL PUSHING
+# This internal function contains the logic to check and push a single repo.
+# It is designed to be exported and used by GNU Parallel.
+# ------------------------------------------------------------------------------
+_push_if_needed()
+{
+    local repo_path="$1"
+    # The 'branch_to_check' variable is inherited from the exported environment.
+
+    local repo_name
+    repo_name=$(basename "${repo_path%/}")
+
+    # Condition (b): Check if the repository is clean (no staged/unstaged changes).
+    if [[ -z "$(git -C "$repo_path" status --porcelain)" ]]; then
+        # Condition (a): Check if there are local commits to push (remote is behind).
+        # We grep the output of your existing function for the specific "behind" message.
+        if git-is-local-synced-with-remote "$branch_to_check" "$repo_path" | grep -q "(remote is behind)"; then
+            printf "\e[33mPushing %s...\e[0m\n" "$repo_name"
+            git -C "$repo_path" push origin "$branch_to_check"
+        fi
+    else
+        printf "\e[90mSkipping %s (has local changes).\e[0m\n" "$repo_name"
+    fi
+}
+export -f _push_if_needed
+
+# ------------------------------------------------------------------------------
+# Pushes pending commits for all clean repos in parallel (SSH).
+# ------------------------------------------------------------------------------
+git-multipush-ssh()
+{
+    local branch_to_check="main"
+    # Parse command-line arguments to allow specifying a branch.
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    # (i) First, show the overall status quietly.
+    echo "--- Initial Status Check ---"
+    git-multistatus-ssh --quiet --branch "$branch_to_check"
+    echo "----------------------------"
+    echo ""
+    echo "--- Attempting to Push Commits for Clean Repositories ---"
+
+    local REPO_DIR="."
+    local repo_list=()
+
+    # Find all git repositories in the current directory.
+    for repo in "$REPO_DIR"/*/; do
+        if [ -d "$repo/.git" ]; then
+            repo_list+=("$repo")
+        fi
+    done
+
+    # Export the branch name so it's available to the parallel sub-processes.
+    export branch_to_check
+
+    # (ii) Run the push logic in parallel.
+    parallel --no-notice --jobs "$(nproc)" _push_if_needed ::: "${repo_list[@]}"
+}
+
+# ------------------------------------------------------------------------------
+# Pushes pending commits for all clean repos sequentially (HTTPS).
+# ------------------------------------------------------------------------------
+git-multipush-https()
+{
+    local branch_to_check="main"
+    # Parse command-line arguments.
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    # (i) First, show the overall status quietly.
+    echo "--- Initial Status Check ---"
+    git-multistatus-https --quiet --branch "$branch_to_check"
+    echo "----------------------------"
+    echo ""
+    echo "--- Attempting to Push Commits for Clean Repositories ---"
+
+    local REPO_DIR="."
+
+    # (ii) Sequentially loop through repos and apply push logic.
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue
+        fi
+
+        local repo_name
+        repo_name=$(basename "${repo%/}")
+
+        # Condition (b): Check if clean.
+        if [[ -z "$(git -C "$repo" status --porcelain)" ]]; then
+            # Condition (a): Check if remote is behind.
+            if git-is-local-synced-with-remote "$branch_to_check" "$repo" | grep -q "(remote is behind)"; then
+                printf "\e[33mPushing %s...\e[0m\n" "$repo_name"
+                git -C "$repo" push origin "$branch_to_check"
+            fi
+        else
+            printf "\e[90mSkipping %s (has local changes).\e[0m\n" "$repo_name"
+        fi
+    done
+}
+# ------------------------------------------------------------------------------
+# HELPER FUNCTION FOR PARALLEL REBASING
+# This internal function contains the logic to check and rebase a single repo.
+# It's designed to be exported and used by GNU Parallel.
+# ------------------------------------------------------------------------------
+_rebase_if_needed()
+{
+    local repo_path="$1"
+    # branch_to_check is inherited from the exported environment variable
+
+    local repo_name
+    repo_name=$(basename "${repo_path%/}")
+
+    # Condition (b): Check if the repository is clean (no staged/unstaged changes)
+    if [[ -z "$(git -C "$repo_path" status --porcelain)" ]]; then
+        # Condition (a): Check if there are upstream changes (local is behind)
+        # We grep the output of your existing function for the specific "behind" message.
+        if git-is-local-synced-with-remote "$branch_to_check" "$repo_path" | grep -q "(local is behind)"; then
+            printf "\e[33mRebasing %s...\e[0m\n" "$repo_name"
+            git -C "$repo_path" rebase "origin/$branch_to_check"
+        fi
+    else
+        printf "\e[90mSkipping %s (has local changes).\e[0m\n" "$repo_name"
+    fi
+}
+export -f _rebase_if_needed
+
+# ------------------------------------------------------------------------------
+git-multirebase-ssh()
+{
+    local branch_to_check="main"
+    # Parse command-line arguments to allow specifying a branch
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    # (i) First, show the overall status quietly
+    echo "--- Initial Status Check ---"
+    git-multistatus-ssh --quiet --branch "$branch_to_check"
+    echo "----------------------------"
+    echo ""
+    echo "--- Attempting Rebase for Clean Repositories ---"
+
+    local REPO_DIR="."
+    local repo_list=()
+
+    # Find all git repositories in the current directory
+    for repo in "$REPO_DIR"/*/; do
+        if [ -d "$repo/.git" ]; then
+            repo_list+=("$repo")
+        fi
+    done
+
+    # Export the branch name so it's available to the parallel sub-processes
+    export branch_to_check
+
+    # (ii) Run the rebase logic in parallel
+    parallel --no-notice --jobs "$(nproc)" _rebase_if_needed ::: "${repo_list[@]}"
+}
+
+# ------------------------------------------------------------------------------
+git-multirebase-https()
+{
+    local branch_to_check="main"
+    # Parse command-line arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    # (i) First, show the overall status quietly
+    echo "--- Initial Status Check ---"
+    git-multistatus-https --quiet --branch "$branch_to_check"
+    echo "----------------------------"
+    echo ""
+    echo "--- Attempting Rebase for Clean Repositories ---"
+
+    local REPO_DIR="."
+
+    # (ii) Sequentially loop through repos and apply rebase logic
+    for repo in "$REPO_DIR"/*/; do
+        if [ ! -d "$repo/.git" ]; then
+            continue
+        fi
+
+        local repo_name
+        repo_name=$(basename "${repo%/}")
+
+        # Condition (b): Check if clean
+        if [[ -z "$(git -C "$repo" status --porcelain)" ]]; then
+            # Condition (a): Check if behind remote
+            if git-is-local-synced-with-remote "$branch_to_check" "$repo" | grep -q "(local is behind)"; then
+                printf "\e[33mRebasing %s...\e[0m\n" "$repo_name"
+                git -C "$repo" rebase "origin/$branch_to_check"
+            fi
+        else
+            printf "\e[90mSkipping %s (has local changes).\e[0m\n" "$repo_name"
+        fi
+    done
+}
+# ------------------------------------------------------------------------------
+# Execute `git rebase origin/<branch>` for multiple repositories under a single directory.
+# Usage: git-multirebase [--branch <value>]
+# ------------------------------------------------------------------------------
+git-multirebase ()
+{
+    branch_to_rebase="main";
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --branch)
+                branch_to_rebase="$2";
+                shift 2;
+                ;;
+            *)
+                echo "Unknown argument: $1";
+                exit 1;
+                ;;
+        esac
+    done;
+
+    echo "Rebasing branch $branch_to_rebase in all repositories";
+    echo "---";
+    REPO_DIR=".";
+    max_width=0;
+    for repo in "$REPO_DIR"/*/;
+    do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        (( ${#repo_name} > max_width )) && max_width=${#repo_name};
+    done;
+    max_width=$((max_width + 2));
+    for repo in "$REPO_DIR"/*/;
+    do
+        if [ ! -d "$repo/.git" ]; then
+            continue;
+        fi;
+        repo_name=$(basename "${repo%/}");
+        output=$(git -C "$repo" fetch origin 2>&1 && git -C "$repo" rebase "origin/$branch_to_rebase" 2>&1)
+        rebase_status=$?
+
+        if [ $rebase_status -ne 0 ]; then
+            color="\e[31m" # Red for failure
+        else
+            color="\e[32m" # Green for success
+        fi;
+
+        printf "${color}%-${max_width}s\e[0m %s\n" "$repo_name" "$output"
+    done;
+}
+# ------------------------------------------------------------------------------
+# HELPER FUNCTION FOR THE UNIFIED SYNC LOGIC
+# This function encapsulates the entire sync process for a single repository.
+# ------------------------------------------------------------------------------
+_sync_repo()
+{
+    local repo_path="$1"
+    # 'branch_to_check' is inherited from the exported environment variable.
+
+    local repo_name
+    repo_name=$(basename "${repo_path%/}")
+
+    # Step 1: Abort if the repository has staged or unstaged changes.
+    if [[ -n "$(git -C "$repo_path" status --porcelain)" ]]; then
+        printf "\e[90mSkipping %s (has local changes).\e[0m\n" "$repo_name"
+        return
+    fi
+
+    # Fetch the latest state from the remote to ensure comparisons are accurate.
+    # This is a single, efficient network operation per repository.
+    git -C "$repo_path" fetch origin >/dev/null 2>&1
+
+    # Get the sync status AFTER fetching.
+    local sync_status
+    sync_status=$(git-is-local-synced-with-remote "$branch_to_check" "$repo_path")
+
+    local action_taken=false
+
+    # Step 2: Push committed changes if the remote is behind.
+    if echo "$sync_status" | grep -q "(remote is behind)"; then
+        printf "\e[33mPushing changes for %s...\e[0m\n" "$repo_name"
+        # Note: This push will be rejected by the remote if the branch has
+        # diverged (i.e., if it's also behind). This is standard, safe behavior.
+        git -C "$repo_path" push origin "$branch_to_check"
+        action_taken=true
+    fi
+
+    # Step 3: Rebase to incorporate upstream commits if the local branch is behind.
+    if echo "$sync_status" | grep -q "(local is behind)"; then
+        printf "\e[33mRebasing changes for %s...\e[0m\n" "$repo_name"
+        git -C "$repo_path" rebase "origin/$branch_to_check"
+        action_taken=true
+    fi
+
+    if [[ "$action_taken" == false ]]; then
+        # Only print the "up to date" message if no other action was taken.
+        if echo "$sync_status" | grep -q "is up to date"; then
+            printf "\e[32m%s is already synced.\e[0m\n" "$repo_name"
+        fi
+    fi
+}
+export -f _sync_repo
+
+# ------------------------------------------------------------------------------
+# Synchronizes multiple Git repositories.
+#
+# This function will:
+# 1. Skip any repository with local (unstaged/staged) changes.
+# 2. For clean repos, push any local commits to the remote.
+# 3. Then, rebase any remote commits onto the local branch.
+#
+# Usage:
+#   git-sync [--ssh | --https] [--branch <name>]
+#
+# Options:
+#   --ssh       Run in parallel using SSH credentials (faster).
+#   --https     Run sequentially using HTTPS credentials (default).
+#   --branch    Specify the branch to sync (default: "main").
+# ------------------------------------------------------------------------------
+git-multisync()
+{
+    local mode="https" # Default to sequential HTTPS mode
+    local branch_to_check="main"
+
+    # --- Argument Parsing ---
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --ssh)
+                mode="ssh"
+                shift
+                ;;
+            --https)
+                mode="https"
+                shift
+                ;;
+            --branch)
+                if [[ -n "$2" ]]; then
+                    branch_to_check="$2"
+                    shift 2
+                else
+                    echo "Error: --branch requires a branch name."
+                    return 1
+                fi
+                ;;
+            *)
+                echo "Unknown option: $1"
+                return 1
+                ;;
+        esac
+    done
+
+    # --- Initial Status Check ---
+    echo "--- Initial Status Check (Mode: $mode) ---"
+    if [[ "$mode" == "ssh" ]]; then
+        git-multistatus-ssh --quiet --branch "$branch_to_check"
+    else
+        git-multistatus-https --quiet --branch "$branch_to_check"
+    fi
+    echo "------------------------------------------"
+    echo ""
+    echo "--- Starting Synchronization Process ---"
+
+    # --- Repository Discovery ---
+    local REPO_DIR="."
+    local repo_list=()
+    for repo in "$REPO_DIR"/*/; do
+        if [ -d "$repo/.git" ]; then
+            repo_list+=("$repo")
+        fi
+    done
+
+    # Export variables needed by the helper function in sub-processes.
+    export branch_to_check
+
+    # --- Execution ---
+    if [[ "$mode" == "ssh" ]]; then
+        # Run the sync logic in parallel for maximum speed.
+        parallel --no-notice --jobs "$(nproc)" _sync_repo ::: "${repo_list[@]}"
+    else
+        # Run the sync logic sequentially.
+        for repo in "${repo_list[@]}"; do
+            _sync_repo "$repo"
+        done
+    fi
+}
