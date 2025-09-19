@@ -745,7 +745,7 @@ _sync_repo()
 
     # Step 1: Abort if the repository has staged or unstaged changes.
     if [[ -n "$(git -C "$repo_path" status --porcelain)" ]]; then
-        printf "\e[90mSkipping %s (has local changes).\e[0m\n" "$repo_name"
+        printf "\e[90mSkipping %s (has local changes)\e[0m\n" "$repo_name"
         return
     fi
 
@@ -778,7 +778,7 @@ _sync_repo()
     if [[ "$action_taken" == false ]]; then
         # Only print the "up to date" message if no other action was taken.
         if echo "$sync_status" | grep -q "is up to date"; then
-            printf "\e[32m%s is already synced.\e[0m\n" "$repo_name"
+            printf "\e[32m%s is already synced\e[0m\n" "$repo_name"
         fi
     fi
 }
@@ -833,15 +833,16 @@ git-multisync()
     done
 
     # --- Initial Status Check ---
-    echo "--- Initial Status Check (Mode: $mode) ---"
+    #echo "--- Initial Status Check (Mode: $mode) ---"
     if [[ "$mode" == "ssh" ]]; then
         git-multistatus-ssh --quiet --branch "$branch_to_check"
     else
         git-multistatus-https --quiet --branch "$branch_to_check"
     fi
-    echo "------------------------------------------"
-    echo ""
-    echo "--- Starting Synchronization Process ---"
+    #echo "------------------------------------------"
+    #echo ""
+    #echo "--- Starting Synchronization Process ---"
+    echo "---"
 
     # --- Repository Discovery ---
     local REPO_DIR="."
